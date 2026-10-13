@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { writeText } from '@tauri-apps/api/clipboard';
 import { HiOutlineVolumeUp } from 'react-icons/hi';
 import { appWindow } from '@tauri-apps/api/window';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { listen } from '@tauri-apps/api/event';
 import { MdContentCopy } from 'react-icons/md';
 import { MdSmartButton } from 'react-icons/md';
@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { HiTranslate } from 'react-icons/hi';
 import { LuDelete } from 'react-icons/lu';
 import { invoke } from '@tauri-apps/api';
-import { atom, useAtom } from 'jotai';
+import { atom, useAtom, useSetAtom } from 'jotai';
 import { getServiceName, getServiceSouceType, ServiceSourceType } from '../../../../utils/service_instance';
 import { useConfig, useSyncAtom, useVoice, useToastStyle } from '../../../../hooks';
 import { invoke_plugin } from '../../../../utils/invoke_plugin';
@@ -25,148 +25,86 @@ import { debug } from 'tauri-plugin-log-api';
 
 export const sourceTextAtom = atom('');
 export const detectLanguageAtom = atom('');
+export const translationRequestAtom = atom(0);
 
-let unlisten = null;
-let timer = null;
 
 export default function SourceArea(props) {
-    const { pluginList, serviceInstanceConfigMap } = props;
+    const { pluginList, serviceInstanceConfigMap, embedded = false } = props;
     const [appFontSize] = useConfig('app_font_size', 16);
-    const [sourceText, setSourceText, syncSourceText] = useSyncAtom(sourceTextAtom);
+    const [sourceText, setSourceText, syncText] = useSyncAtom(sourceTextAtom);
+    const setTranslationRequest = useSetAtom(translationRequestAtom);
+    const syncSourceText = () => {
+        syncText();
+        setTranslationRequest((version) => version + 1);
+    };
     const [detectLanguage, setDetectLanguage] = useAtom(detectLanguageAtom);
     const [incrementalTranslate] = useConfig('incremental_translate', false);
     const [dynamicTranslate] = useConfig('dynamic_translate', false);
     const [deleteNewline] = useConfig('translate_delete_newline', false);
     const [recognizeLanguage] = useConfig('recognize_language', 'auto');
     const [recognizeServiceList] = useConfig('recognize_service_list', ['system', 'tesseract']);
-    const [ttsServiceList] = useConfig('tts_service_list', ['lingva_tts']);
+    const [ttsServiceList] = useConfig('tts_service_list', ['google_tts']);
     const [hideWindow] = useConfig('translate_hide_window', false);
     const [hideSource] = useConfig('hide_source', false);
     const [ttsPluginInfo, setTtsPluginInfo] = useState();
-    const [windowType, setWindowType] = useState('[SELECTION_TRANSLATE]');
+    const [speaking, setSpeaking] = useState(false);
+    const [windowType, setWindowType] = useState(embedded ? '[INPUT_TRANSLATE]' : '[SELECTION_TRANSLATE]');
     const toastStyle = useToastStyle();
     const { t } = useTranslation();
     const textAreaRef = useRef();
     const speak = useVoice();
 
     const handleNewText = async (text) => {
-        text = text.trim();
-        if (hideWindow) {
-            appWindow.hide();
-        } else {
-            appWindow.show();
-            appWindow.setFocus();
+        if (!embedded) {
+            if (hideWindow && text !== '[INPUT_TRANSLATE]') {
+                await appWindow.hide();
+            } else {
+                await appWindow.show();
+                await appWindow.setFocus();
+            }
         }
-        // 清空检测语言
         setDetectLanguage('');
+        setWindowType(text.startsWith('[') ? text : '[SELECTION_TRANSLATE]');
         if (text === '[INPUT_TRANSLATE]') {
-            setWindowType('[INPUT_TRANSLATE]');
-            appWindow.show();
-            appWindow.setFocus();
             setSourceText('', true);
-        } else if (text === '[IMAGE_TRANSLATE]') {
-            setWindowType('[IMAGE_TRANSLATE]');
-            const base64 = await invoke('get_base64');
-            const serviceInstanceKey = recognizeServiceList[0];
-            if (getServiceSouceType(serviceInstanceKey) === ServiceSourceType.PLUGIN) {
-                if (recognizeLanguage in pluginList['recognize'][getServiceName(serviceInstanceKey)].language) {
-                    const pluginConfig = serviceInstanceConfigMap[serviceInstanceKey];
-
-                    let [func, utils] = await invoke_plugin('recognize', getServiceName(serviceInstanceKey));
-                    func(
-                        base64,
-                        pluginList['recognize'][getServiceName(serviceInstanceKey)].language[recognizeLanguage],
-                        {
-                            config: pluginConfig,
-                            utils,
-                        }
-                    ).then(
-                        (v) => {
-                            let newText = v.trim();
-                            if (deleteNewline) {
-                                newText = v.replace(/\-\s+/g, '').replace(/\s+/g, ' ');
-                            } else {
-                                newText = v.trim();
-                            }
-                            if (incrementalTranslate) {
-                                setSourceText((old) => {
-                                    return old + ' ' + newText;
-                                });
-                            } else {
-                                setSourceText(newText);
-                            }
-                            detect_language(newText).then(() => {
-                                syncSourceText();
-                            });
-                        },
-                        (e) => {
-                            setSourceText(e.toString());
-                        }
-                    );
+            textAreaRef.current?.focus();
+            return;
+        }
+        try {
+            if (text === '[IMAGE_TRANSLATE]') {
+                const base64 = await invoke('get_base64');
+                if (!base64) throw new Error('没有可识别的截图，请重新截图');
+                const instanceKey = recognizeServiceList?.[0];
+                if (!instanceKey) throw new Error('请先配置文字识别服务');
+                const name = getServiceName(instanceKey);
+                if (getServiceSouceType(instanceKey) === ServiceSourceType.PLUGIN) {
+                    const plugin = pluginList.recognize[name];
+                    if (!plugin || !(recognizeLanguage in plugin.language)) throw new Error('Language not supported');
+                    const [func, utils] = await invoke_plugin('recognize', name);
+                    text = await func(base64, plugin.language[recognizeLanguage], {
+                        config: serviceInstanceConfigMap[instanceKey], utils,
+                    });
                 } else {
-                    setSourceText('Language not supported');
-                }
-            } else {
-                if (recognizeLanguage in recognizeServices[getServiceName(serviceInstanceKey)].Language) {
-                    const instanceConfig = serviceInstanceConfigMap[serviceInstanceKey];
-                    recognizeServices[getServiceName(serviceInstanceKey)]
-                        .recognize(
-                            base64,
-                            recognizeServices[getServiceName(serviceInstanceKey)].Language[recognizeLanguage],
-                            {
-                                config: instanceConfig,
-                            }
-                        )
-                        .then(
-                            (v) => {
-                                let newText = v.trim();
-                                if (deleteNewline) {
-                                    newText = v.replace(/\-\s+/g, '').replace(/\s+/g, ' ');
-                                } else {
-                                    newText = v.trim();
-                                }
-                                if (incrementalTranslate) {
-                                    setSourceText((old) => {
-                                        return old + ' ' + newText;
-                                    });
-                                } else {
-                                    setSourceText(newText);
-                                }
-                                detect_language(newText).then(() => {
-                                    syncSourceText();
-                                });
-                            },
-                            (e) => {
-                                setSourceText(e.toString());
-                            }
-                        );
-                } else {
-                    setSourceText('Language not supported');
+                    const service = recognizeServices[name];
+                    if (!service || !(recognizeLanguage in service.Language)) throw new Error('Language not supported');
+                    text = await service.recognize(base64, service.Language[recognizeLanguage], {
+                        config: serviceInstanceConfigMap[instanceKey],
+                    });
                 }
             }
-        } else {
-            setWindowType('[SELECTION_TRANSLATE]');
-            let newText = text.trim();
-            if (deleteNewline) {
-                newText = text.replace(/\-\s+/g, '').replace(/\s+/g, ' ');
-            } else {
-                newText = text.trim();
-            }
-            if (incrementalTranslate) {
-                setSourceText((old) => {
-                    return old + ' ' + newText;
-                });
-            } else {
-                setSourceText(newText);
-            }
-            detect_language(newText).then(() => {
-                syncSourceText();
-            });
+            const newText = deleteNewline ? text.replace(/\-\s+/g, '').replace(/\s+/g, ' ').trim() : text.trim();
+            if (!newText) throw new Error('未读取到文字。划词请检查选区及辅助功能权限，截图请确认图片包含文字');
+            setSourceText(incrementalTranslate ? (old) => `${old} ${newText}`.trim() : newText);
+            await detect_language(newText);
+            syncSourceText();
+        } catch (error) {
+            toast.error(error.toString(), { style: toastStyle });
         }
     };
 
     const keyDown = (event) => {
         if (event.key === 'Enter' && !event.shiftKey) {
+            if (event.nativeEvent.isComposing) return;
             event.preventDefault();
             detect_language(sourceText).then(() => {
                 syncSourceText();
@@ -178,7 +116,9 @@ export default function SourceArea(props) {
     };
 
     const handleSpeak = async () => {
-        const instanceKey = ttsServiceList[0];
+        await speak.prepare();
+        const instanceKey = ttsServiceList?.[0];
+        if (!instanceKey) throw new Error('请先配置朗读服务');
         let detected = detectLanguage;
         if (detected === '') {
             detected = await detect(sourceText);
@@ -194,7 +134,7 @@ export default function SourceArea(props) {
                 config: pluginConfig,
                 utils,
             });
-            speak(data);
+            await speak(data);
         } else {
             if (!(detected in builtinTtsServices[getServiceName(instanceKey)].Language)) {
                 throw new Error('Language not supported');
@@ -207,23 +147,19 @@ export default function SourceArea(props) {
                     config: instanceConfig,
                 }
             );
-            speak(data);
+            await speak(data);
         }
     };
 
+    const handleNewTextRef = useRef(handleNewText);
+    handleNewTextRef.current = handleNewText;
     useEffect(() => {
-        if (hideWindow !== null) {
-            if (unlisten) {
-                unlisten.then((f) => {
-                    f();
-                });
-            }
-            unlisten = listen('new_text', (event) => {
-                appWindow.setFocus();
-                handleNewText(event.payload);
-            });
-        }
-    }, [hideWindow]);
+        if (embedded || hideWindow === null || deleteNewline === null || incrementalTranslate === null || !recognizeServiceList || !recognizeLanguage) return;
+        const unlisten = listen('new_text', (event) => handleNewTextRef.current(event.payload));
+        // A new window can receive its event before its webview is ready.
+        unlisten.then(() => invoke('get_text')).then((text) => handleNewTextRef.current(text));
+        return () => { unlisten.then((stop) => stop()); };
+    }, [embedded, hideWindow !== null && deleteNewline !== null && incrementalTranslate !== null && !!recognizeServiceList && !!recognizeLanguage]);
 
     useEffect(() => {
         if (ttsServiceList && getServiceSouceType(ttsServiceList[0]) === ServiceSourceType.PLUGIN) {
@@ -236,50 +172,45 @@ export default function SourceArea(props) {
     }, [ttsServiceList]);
 
     useEffect(() => {
-        if (
-            deleteNewline !== null &&
-            incrementalTranslate !== null &&
-            recognizeLanguage !== null &&
-            recognizeServiceList !== null &&
-            hideWindow !== null
-        ) {
-            invoke('get_text').then((v) => {
-                handleNewText(v);
-            });
-        }
-    }, [deleteNewline, incrementalTranslate, recognizeLanguage, recognizeServiceList, hideWindow]);
-
-    useEffect(() => {
         textAreaRef.current.style.height = '50px';
         textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
     }, [sourceText]);
 
     const detect_language = async (text) => {
-        setDetectLanguage(await detect(text));
+        try {
+            setDetectLanguage(await detect(text));
+        } catch (error) {
+            setDetectLanguage('');
+            toast.error(`语言检测失败：${error}`, { style: toastStyle });
+        }
     };
 
-    let sourceTextChangeTimer = null;
+    const sourceTextChangeTimer = useRef(null);
+    useEffect(() => () => clearTimeout(sourceTextChangeTimer.current), []);
     const changeSourceText = async (text) => {
         setDetectLanguage('');
         await setSourceText(text);
         if (dynamicTranslate) {
-            if (sourceTextChangeTimer) {
-                clearTimeout(sourceTextChangeTimer);
+            if (sourceTextChangeTimer.current) {
+                clearTimeout(sourceTextChangeTimer.current);
             }
-            sourceTextChangeTimer = setTimeout(() => {
+            sourceTextChangeTimer.current = setTimeout(() => {
                 detect_language(text).then(() => {
                     syncSourceText();
                 });
             }, 1000);
         }
-    }
+    };
 
     const transformVarName = function (str) {
         let str2 = str;
 
         // snake_case to SNAKE_CASE
         if (/_[a-z]/.test(str2)) {
-            str2 = str2.split('_').map(it => it.toLocaleUpperCase()).join('_');
+            str2 = str2
+                .split('_')
+                .map((it) => it.toLocaleUpperCase())
+                .join('_');
         }
         if (str2 !== str) {
             return str2;
@@ -287,7 +218,10 @@ export default function SourceArea(props) {
 
         // SNAKE_CASE to kebab-case
         if (/^[A-Z]+(_[A-Z]+)*$/.test(str2)) {
-            str2 = str2.split('_').map(it => it.toLocaleLowerCase()).join('-');
+            str2 = str2
+                .split('_')
+                .map((it) => it.toLocaleLowerCase())
+                .join('-');
         }
         if (str2 !== str) {
             return str2;
@@ -295,7 +229,10 @@ export default function SourceArea(props) {
 
         // kebab-case to dot.notation
         if (/-/.test(str2)) {
-            str2 = str2.split('-').map(it => it.toLocaleLowerCase()).join('.');
+            str2 = str2
+                .split('-')
+                .map((it) => it.toLocaleLowerCase())
+                .join('.');
         }
         if (str2 !== str) {
             return str2;
@@ -343,9 +280,9 @@ export default function SourceArea(props) {
         }
 
         return str2;
-    }
+    };
     useEffect(() => {
-        textAreaRef.current.addEventListener("keydown", async (event) => {
+        textAreaRef.current.addEventListener('keydown', async (event) => {
             if (event.altKey && event.shiftKey && event.code === 'KeyU') {
                 const originText = textAreaRef.current.value;
                 const selectionStart = textAreaRef.current.selectionStart;
@@ -353,7 +290,8 @@ export default function SourceArea(props) {
                 const selectionText = originText.substring(selectionStart, selectionEnd);
 
                 const convertedText = transformVarName(selectionText);
-                const targetText = originText.substring(0, selectionStart) + convertedText + originText.substring(selectionEnd);
+                const targetText =
+                    originText.substring(0, selectionStart) + convertedText + originText.substring(selectionEnd);
 
                 await changeSourceText(targetText);
                 textAreaRef.current.selectionStart = selectionStart;
@@ -362,16 +300,18 @@ export default function SourceArea(props) {
         });
     }, [textAreaRef]);
 
-
     return (
-        <div className={hideSource && windowType !== '[INPUT_TRANSLATE]' && 'hidden'}>
+        <div className={`sui-source ${!embedded && hideSource && windowType !== '[INPUT_TRANSLATE]' ? 'hidden' : ''}`}>
+            <div className='sui-source-label'>{t('sui.source')}</div>
             <Card
                 shadow='none'
                 className='bg-content1 rounded-[10px] mt-[1px] pb-0'
             >
-                <Toaster />
+
                 <CardBody className='bg-content1 p-[12px] pb-0 max-h-[40vh] overflow-y-auto'>
                     <textarea
+                        aria-label={t('sui.source')}
+                        placeholder={t('sui.source_hint')}
                         autoFocus
                         ref={textAreaRef}
                         className={`text-[${appFontSize}px] bg-content1 h-full resize-none outline-none`}
@@ -390,12 +330,16 @@ export default function SourceArea(props) {
                             <Tooltip content={t('translate.speak')}>
                                 <Button
                                     isIconOnly
+                                    aria-label={t('translate.speak')}
+                                    isLoading={speaking}
+                                    isDisabled={!sourceText.trim()}
                                     variant='light'
                                     size='sm'
-                                    onPress={() => {
-                                        handleSpeak().catch((e) => {
-                                            toast.error(e.toString(), { style: toastStyle });
-                                        });
+                                    onPress={async () => {
+                                        setSpeaking(true);
+                                        try { await handleSpeak(); }
+                                        catch (error) { toast.error(error.toString(), { style: toastStyle }); }
+                                        finally { setSpeaking(false); }
                                     }}
                                 >
                                     <HiOutlineVolumeUp className='text-[16px]' />
@@ -436,7 +380,8 @@ export default function SourceArea(props) {
                                     isIconOnly
                                     isDisabled={sourceText === ''}
                                     onPress={() => {
-                                        setSourceText('');
+                                        setSourceText('', true);
+                                        setDetectLanguage('');
                                     }}
                                 >
                                     <LuDelete className='text-[16px]' />
@@ -446,7 +391,7 @@ export default function SourceArea(props) {
                         {detectLanguage !== '' && (
                             <Chip
                                 size='sm'
-                                color='secondary'
+                                color='primary'
                                 variant='dot'
                                 className='my-auto'
                             >
@@ -458,16 +403,19 @@ export default function SourceArea(props) {
                         <Button
                             size='sm'
                             color='primary'
-                            variant='light'
-                            isIconOnly
-                            className='text-[14px] font-bold'
+                            variant='solid'
+                            aria-label={t('sui.translate')}
+                            isDisabled={!sourceText.trim()}
+                            className='text-[14px] font-medium'
                             startContent={<HiTranslate className='text-[16px]' />}
                             onPress={() => {
                                 detect_language(sourceText).then(() => {
                                     syncSourceText();
                                 });
                             }}
-                        />
+                        >
+                            {t('sui.translate')}
+                        </Button>
                     </Tooltip>
                 </CardFooter>
             </Card>

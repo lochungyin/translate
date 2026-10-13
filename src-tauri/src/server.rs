@@ -9,15 +9,15 @@ pub fn start_server() {
     let port = match get("server_port") {
         Some(v) => v.as_i64().unwrap(),
         None => {
-            set("server_port", 60828);
-            60828
+            set("server_port", 60829);
+            60829
         }
     };
     thread::spawn(move || {
         let server = match Server::http(format!("127.0.0.1:{port}")) {
             Ok(v) => v,
             Err(e) => {
-                let _ = notification::Notification::new("com.pot-spp.com")
+                let _ = notification::Notification::new("com.lochungyin.sui.translate")
                     .title("Server start failed")
                     .body("Please Change Server Port and restart the application")
                     .show();
@@ -45,7 +45,10 @@ fn http_handle(request: Request) {
         "/ocr_translate?screenshot=false" => handle_ocr_translate(request),
         "/ocr_recognize?screenshot=true" => handle_ocr_recognize(request),
         "/ocr_translate?screenshot=true" => handle_ocr_translate(request),
-        _ => warn!("Unknown request url: {}", request.url()),
+        _ => {
+            let _ =
+                request.respond(Response::from_string("Unknown endpoint").with_status_code(404));
+        }
     }
 }
 
@@ -57,6 +60,10 @@ fn handle_config(request: Request) {
 fn handle_translate(mut request: Request) {
     let mut content = String::new();
     request.as_reader().read_to_string(&mut content).unwrap();
+    if content.trim().is_empty() {
+        let _ = request.respond(Response::from_string("Text is required").with_status_code(400));
+        return;
+    }
     text_translate(content);
     response_ok(request);
 }

@@ -75,7 +75,6 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
     match app_handle.get_window(label) {
         Some(v) => {
             info!("Window existence: {}", label);
-            v.set_focus().unwrap();
             (v, true)
         }
         None => {
@@ -114,11 +113,16 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
 }
 
 pub fn config_window() {
-    let (window, _exists) = build_window("config", "Config");
+    let (window, exists) = build_window("config", "随译 · Sui Translate");
+    if exists {
+        let _ = window.show();
+        let _ = window.set_focus();
+        return;
+    }
     window
-        .set_min_size(Some(tauri::LogicalSize::new(800, 400)))
+        .set_min_size(Some(tauri::LogicalSize::new(720, 500)))
         .unwrap();
-    window.set_size(tauri::LogicalSize::new(800, 600)).unwrap();
+    window.set_size(tauri::LogicalSize::new(1060, 760)).unwrap();
     window.center().unwrap();
 }
 
@@ -132,7 +136,7 @@ fn translate_window() -> Window {
             Position { x: 0, y: 0 }
         }
     };
-    let (window, exists) = build_window("translate", "Translate");
+    let (window, exists) = build_window("translate", "随译 · 翻译");
     if exists {
         return window;
     }
@@ -224,18 +228,27 @@ fn translate_window() -> Window {
 }
 
 pub fn selection_translate() {
-    use selection::get_text;
-    // Get Selected Text
-    let text = get_text();
-    if !text.trim().is_empty() {
-        let app_handle = APP.get().unwrap();
-        // Write into State
-        let state: tauri::State<StringWrapper> = app_handle.state();
-        state.0.lock().unwrap().replace_range(.., &text);
-    }
-
-    let window = translate_window();
-    window.emit("new_text", text).unwrap();
+    std::thread::spawn(|| {
+        #[cfg(target_os = "macos")]
+        if !macos_accessibility_client::accessibility::application_is_trusted() {
+            config_window();
+            let _ = APP.get().unwrap().emit_all(
+                "action_error",
+                "划词需要辅助功能权限，请在系统设置 → 隐私与安全性 → 辅助功能中允许随译",
+            );
+            return;
+        }
+        let text = selection::get_text();
+        if text.trim().is_empty() {
+            config_window();
+            let _ = APP.get().unwrap().emit_all(
+                "action_error",
+                "未读取到选中文字，请先在其他应用中选中文字，再按划词快捷键",
+            );
+            return;
+        }
+        text_translate(text);
+    });
 }
 
 pub fn input_translate() {
@@ -281,7 +294,7 @@ pub fn image_translate() {
 }
 
 pub fn recognize_window() {
-    let (window, exists) = build_window("recognize", "Recognize");
+    let (window, exists) = build_window("recognize", "随译 · 文字识别");
     if exists {
         window.emit("new_image", "").unwrap();
         return;
@@ -332,80 +345,92 @@ fn screenshot_window() -> Window {
     window
 }
 
-pub fn ocr_recognize() {
-    #[cfg(target_os = "macos")]
-    {
-        let app_handle = APP.get().unwrap();
-        let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-        app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
-        if !app_cache_dir_path.exists() {
-            // 创建目录
-            fs::create_dir_all(&app_cache_dir_path).expect("Create Cache Dir Failed");
+#[cfg(target_os = "macos")]
+pub fn capture_for_ocr(translate: bool) -> Result<bool, String> {
+    #[link(name = "CoreGraphics", kind = "framework")]
+    extern "C" {
+        fn CGPreflightScreenCaptureAccess() -> bool;
+    }
+    if !unsafe { CGPreflightScreenCaptureAccess() } {
+        return Err("截图需要屏幕录制权限，请在 macOS 系统设置 → 隐私与安全性 → 屏幕录制中允许随译，然后重启应用".into());
+    }
+    let app = APP.get().unwrap();
+    let config = app
+        .get_window("config")
+        .filter(|w| w.is_visible().unwrap_or(false));
+    if let Some(window) = &config {
+        let _ = window.hide();
+    }
+    let result = (|| {
+        let path = cache_dir()
+            .ok_or("无法获取截图缓存目录")?
+            .join(&app.config().tauri.bundle.identifier)
+            .join("pot_screenshot_cut.png");
+        fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
+        // Never reuse the previous image when the user cancels a new capture.
+        if path.exists() {
+            fs::remove_file(&path).map_err(|e| e.to_string())?;
         }
-        app_cache_dir_path.push("pot_screenshot_cut.png");
-
-        let path = app_cache_dir_path.to_string_lossy().replace("\\\\?\\", "");
-        println!("Screenshot path: {}", path);
-        if let Ok(_output) = std::process::Command::new("/usr/sbin/screencapture")
-            .arg("-i")
-            .arg("-r")
-            .arg(path)
+        let output = std::process::Command::new("/usr/sbin/screencapture")
+            .args(["-i", "-r"])
+            .arg(&path)
             .output()
-        {
+            .map_err(|e| e.to_string())?;
+        if !path.exists() {
+            let error = String::from_utf8_lossy(&output.stderr);
+            if error.trim().is_empty() {
+                return Ok(false);
+            }
+            return Err(format!("截图失败：{}", error.trim()));
+        }
+        if !output.status.success() {
+            return Err("截图未完成，请重新截图".into());
+        }
+        if translate {
+            image_translate();
+        } else {
             recognize_window();
         }
+        Ok(true)
+    })();
+    if !matches!(result, Ok(true)) {
+        if let Some(window) = config {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
     }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let window = screenshot_window();
-        let window_ = window.clone();
-        window.listen("success", move |event| {
+    result
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn capture_for_ocr(translate: bool) -> Result<bool, String> {
+    let window = screenshot_window();
+    let window_ = window.clone();
+    window.listen("success", move |event| {
+        if translate {
+            image_translate();
+        } else {
             recognize_window();
-            window_.unlisten(event.id())
-        });
-    }
+        }
+        window_.unlisten(event.id());
+    });
+    Ok(true)
+}
+
+fn start_capture(translate: bool) {
+    std::thread::spawn(move || {
+        if let Err(error) = capture_for_ocr(translate) {
+            warn!("{}", error);
+            let app = APP.get().unwrap();
+            config_window();
+            let _ = app.emit_all("action_error", &error);
+        }
+    });
+}
+
+pub fn ocr_recognize() {
+    start_capture(false);
 }
 pub fn ocr_translate() {
-    #[cfg(target_os = "macos")]
-    {
-        let app_handle = APP.get().unwrap();
-        let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-        app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
-        if !app_cache_dir_path.exists() {
-            // 创建目录
-            fs::create_dir_all(&app_cache_dir_path).expect("Create Cache Dir Failed");
-        }
-        app_cache_dir_path.push("pot_screenshot_cut.png");
-
-        let path = app_cache_dir_path.to_string_lossy().replace("\\\\?\\", "");
-        println!("Screenshot path: {}", path);
-        if let Ok(_output) = std::process::Command::new("/usr/sbin/screencapture")
-            .arg("-i")
-            .arg("-r")
-            .arg(path)
-            .output()
-        {
-            image_translate();
-            ();
-        }
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let window = screenshot_window();
-        let window_ = window.clone();
-        window.listen("success", move |event| {
-            image_translate();
-            window_.unlisten(event.id())
-        });
-    }
-}
-
-#[tauri::command(async)]
-pub fn updater_window() {
-    let (window, _exists) = build_window("updater", "Updater");
-    window
-        .set_min_size(Some(tauri::LogicalSize::new(600, 400)))
-        .unwrap();
-    window.set_size(tauri::LogicalSize::new(600, 400)).unwrap();
-    window.center().unwrap();
+    start_capture(true);
 }

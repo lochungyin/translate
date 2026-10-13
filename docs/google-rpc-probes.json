@@ -1,0 +1,26 @@
+[
+  {
+    "case": "direct-minimal",
+    "text": "Hello, world.",
+    "from": "en",
+    "to": "zh-CN",
+    "http": "200 application/json; charset=utf-8",
+    "error": ""
+  },
+  {
+    "case": "word-proxy",
+    "text": "hello",
+    "from": "auto",
+    "to": "zh-CN",
+    "http": "200 application/json; charset=utf-8",
+    "error": ""
+  },
+  {
+    "case": "multiline-proxy",
+    "text": "你好。\n今天是晴天。",
+    "from": "auto",
+    "to": "en",
+    "http": "200 application/json; charset=utf-8",
+    "error": ""
+  }
+]

@@ -7,15 +7,21 @@ import React from 'react';
 
 import * as builtinServices from '../../../../../../services/translate';
 import { useConfig } from '../../../../../../hooks';
-import { INSTANCE_NAME_CONFIG_KEY, ServiceSourceType, getDisplayInstanceName, getServiceName, getServiceSouceType } from '../../../../../../utils/service_instance';
+import {
+    INSTANCE_NAME_CONFIG_KEY,
+    ServiceSourceType,
+    getDisplayInstanceName,
+    getServiceName,
+    getServiceSouceType,
+} from '../../../../../../utils/service_instance';
 
 export default function ServiceItem(props) {
     const { serviceInstanceKey, pluginList, deleteServiceInstance, setCurrentConfigKey, onConfigOpen, ...drag } = props;
     const { t } = useTranslation();
     const [serviceInstanceConfig, setServiceInstanceConfig] = useConfig(serviceInstanceKey, {});
 
-    const serviceSourceType = getServiceSouceType(serviceInstanceKey)
-    const serviceName = getServiceName(serviceInstanceKey)
+    const serviceSourceType = getServiceSouceType(serviceInstanceKey);
+    const serviceName = getServiceName(serviceInstanceKey);
 
     return serviceSourceType === ServiceSourceType.PLUGIN && !(serviceName in pluginList) ? (
         <></>
@@ -39,7 +45,11 @@ export default function ServiceItem(props) {
                                 draggable={false}
                             />
                             <Spacer x={2} />
-                            <h2 className='my-auto'>{getDisplayInstanceName(serviceInstanceConfig[INSTANCE_NAME_CONFIG_KEY], () => t(`services.translate.${serviceName}.title`))}</h2>
+                            <h2 className='my-auto'>
+                                {getDisplayInstanceName(serviceInstanceConfig[INSTANCE_NAME_CONFIG_KEY], () =>
+                                    t(`services.translate.${serviceName}.title`)
+                                )}
+                            </h2>
                         </>
                     )}
                     {serviceSourceType === ServiceSourceType.PLUGIN && (
@@ -50,13 +60,19 @@ export default function ServiceItem(props) {
                                 draggable={false}
                             />
                             <Spacer x={2} />
-                            <h2 className='my-auto'>{getDisplayInstanceName(serviceInstanceConfig[INSTANCE_NAME_CONFIG_KEY], () => pluginList[serviceName].display) +  `[${t('common.plugin')}]`}</h2>
+                            <h2 className='my-auto'>
+                                {getDisplayInstanceName(
+                                    serviceInstanceConfig[INSTANCE_NAME_CONFIG_KEY],
+                                    () => pluginList[serviceName].display
+                                ) + `[${t('common.plugin')}]`}
+                            </h2>
                         </>
                     )}
                 </div>
                 <div className='flex'>
                     <Switch
                         size='sm'
+                        aria-label={`启用 ${serviceName}`}
                         isSelected={serviceInstanceConfig['enable'] ?? true}
                         onValueChange={(v) => {
                             setServiceInstanceConfig({ ...serviceInstanceConfig, enable: v });
@@ -66,6 +82,7 @@ export default function ServiceItem(props) {
                         isIconOnly
                         size='sm'
                         variant='light'
+                        aria-label={`配置 ${serviceName}`}
                         onPress={() => {
                             setCurrentConfigKey(serviceInstanceKey);
                             onConfigOpen();
@@ -79,6 +96,7 @@ export default function ServiceItem(props) {
                         size='sm'
                         variant='light'
                         color='danger'
+                        aria-label={`删除 ${serviceName}`}
                         onPress={() => {
                             deleteServiceInstance(serviceInstanceKey);
                         }}

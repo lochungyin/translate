@@ -1,7 +1,7 @@
 import { enable, isEnabled, disable } from 'tauri-plugin-autostart-api';
 import { DropdownTrigger } from '@nextui-org/react';
 import React, { useState, useEffect } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { DropdownMenu } from '@nextui-org/react';
 import { DropdownItem } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
@@ -26,9 +26,8 @@ let timer = null;
 export default function General() {
     const [autoStart, setAutoStart] = useState(false);
     const [fontList, setFontList] = useState(null);
-    const [checkUpdate, setCheckUpdate] = useConfig('check_update', true);
-    const [serverPort, setServerPort] = useConfig('server_port', 60828);
-    const [appLanguage, setAppLanguage] = useConfig('app_language', 'en');
+    const [serverPort, setServerPort] = useConfig('server_port', 60829);
+    const [appLanguage, setAppLanguage] = useConfig('app_language', 'zh_cn');
     const [appTheme, setAppTheme] = useConfig('app_theme', 'system');
     const [appFont, setAppFont] = useConfig('app_font', 'default');
     const [appFallbackFont, setAppFallbackFont] = useConfig('app_fallback_font', 'default');
@@ -79,7 +78,7 @@ export default function General() {
 
     return (
         <>
-            <Toaster />
+
             <Card className='mb-[10px]'>
                 <CardBody>
                     <div className='config-item'>
@@ -99,17 +98,6 @@ export default function General() {
                                 }
                             }}
                         />
-                    </div>
-                    <div className='config-item'>
-                        <h3>{t('config.general.check_update')}</h3>
-                        {checkUpdate !== null && (
-                            <Switch
-                                isSelected={checkUpdate}
-                                onValueChange={(v) => {
-                                    setCheckUpdate(v);
-                                }}
-                            />
-                        )}
                     </div>
                     <div className='config-item'>
                         <h3 className='my-auto'>{t('config.general.server_port')}</h3>
@@ -500,28 +488,25 @@ export default function General() {
                             <Switch
                                 isSelected={proxyEnable}
                                 onValueChange={async (v) => {
-                                    if (v) {
-                                        if (proxyHost === '' || proxyPort === '') {
-                                            setProxyEnable(false);
-                                            toast.error(t('config.general.proxy_error'), {
-                                                duration: 3000,
-                                                style: toastStyle,
-                                            });
-                                            return;
-                                        } else {
-                                            setProxyEnable(v);
+                                    const previous = proxyEnable;
+                                    try {
+                                        if (v) {
+                                            await setProxyHost(proxyHost, true);
+                                            await setProxyPort(proxyPort, true);
+                                            await setNoProxy(noProxy, true);
                                         }
-                                    } else {
-                                        setProxyEnable(v);
+                                        await setProxyEnable(v, true);
+                                        await invoke('service_http_status');
+                                        toast.success(t('sui.proxy_applied'), { duration: 2000, style: toastStyle });
+                                    } catch (error) {
+                                        await setProxyEnable(previous, true);
+                                        toast.error(String(error), { duration: 3000, style: toastStyle });
                                     }
-                                    toast.success(t('config.general.proxy_change'), {
-                                        duration: 1000,
-                                        style: toastStyle,
-                                    });
                                 }}
                             />
                         )}
                     </div>
+                    <p className='text-xs text-default-500 mb-3'>{t('sui.proxy_hint')}</p>
                     <div className='config-item'>
                         {proxyHost !== null && (
                             <Input

@@ -129,7 +129,7 @@ export default function TextArea(props) {
                 }
             }
         }
-    }, [base64, currentServiceInstanceKey, language, recognizeFlag, autoCopy, deleteNewline, hideWindow]);
+    }, [base64, currentServiceInstanceKey, language, recognizeFlag, autoCopy, deleteNewline, hideWindow, serviceInstanceConfigMap]);
 
     return (
         <Card

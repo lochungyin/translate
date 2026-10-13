@@ -17,67 +17,20 @@ import { useConfig } from '../../hooks';
 import { store } from '../../utils/store';
 import { info } from 'tauri-plugin-log-api';
 
-let blurTimeout = null;
 let resizeTimeout = null;
 let moveTimeout = null;
 
-const listenBlur = () => {
-    return listen('tauri://blur', () => {
-        if (appWindow.label === 'translate') {
-            if (blurTimeout) {
-                clearTimeout(blurTimeout);
-            }
-            info('Blur');
-            // 100ms后关闭窗口，因为在 windows 下拖动窗口时会先切换成 blur 再立即切换成 focus
-            // 如果直接关闭将导致窗口无法拖动
-            blurTimeout = setTimeout(async () => {
-                info('Confirm Blur');
-                await appWindow.close();
-            }, 100);
-        }
-    });
-};
-
-let unlisten = listenBlur();
-// 取消 blur 监听
-const unlistenBlur = () => {
-    unlisten.then((f) => {
-        f();
-    });
-};
-
-// 监听 focus 事件取消 blurTimeout 时间之内的关闭窗口
-void listen('tauri://focus', () => {
-    info('Focus');
-    if (blurTimeout) {
-        info('Cancel Close');
-        clearTimeout(blurTimeout);
-    }
-});
-// 监听 move 事件取消 blurTimeout 时间之内的关闭窗口
-void listen('tauri://move', () => {
-    info('Move');
-    if (blurTimeout) {
-        info('Cancel Close');
-        clearTimeout(blurTimeout);
-    }
-});
-
-export default function Translate() {
+export default function Translate({ embedded = false }) {
     const [closeOnBlur] = useConfig('translate_close_on_blur', true);
     const [alwaysOnTop] = useConfig('translate_always_on_top', false);
     const [windowPosition] = useConfig('translate_window_position', 'mouse');
     const [rememberWindowSize] = useConfig('translate_remember_window_size', false);
     const [translateServiceInstanceList, setTranslateServiceInstanceList] = useConfig('translate_service_list', [
-        'deepl',
-        'bing',
-        'lingva',
-        'yandex',
         'google',
-        'ecdict',
+        'youdao',
     ]);
     const [recognizeServiceInstanceList] = useConfig('recognize_service_list', ['system', 'tesseract']);
-    const [ttsServiceInstanceList] = useConfig('tts_service_list', ['lingva_tts']);
+    const [ttsServiceInstanceList] = useConfig('tts_service_list', ['google_tts']);
     const [collectionServiceInstanceList] = useConfig('collection_service_list', []);
     const [hideLanguage] = useConfig('hide_language', false);
     const [pined, setPined] = useState(false);
@@ -95,23 +48,25 @@ export default function Translate() {
         const items = reorder(translateServiceInstanceList, result.source.index, result.destination.index);
         setTranslateServiceInstanceList(items);
     };
-    // 是否自动关闭窗口
     useEffect(() => {
-        if (closeOnBlur !== null && !closeOnBlur) {
-            unlistenBlur();
-        }
-    }, [closeOnBlur]);
-    // 是否默认置顶
+        if (embedded || closeOnBlur === null) return;
+        let timer;
+        const stops = [listen('tauri://blur', () => {
+            if (closeOnBlur && !pined && appWindow.label === 'translate') {
+                timer = setTimeout(() => appWindow.close(), 100);
+            }
+        }), listen('tauri://focus', () => clearTimeout(timer)), listen('tauri://move', () => clearTimeout(timer))];
+        return () => { clearTimeout(timer); stops.forEach((stop) => stop.then((fn) => fn())); };
+    }, [embedded, closeOnBlur, pined]);
     useEffect(() => {
-        if (alwaysOnTop !== null && alwaysOnTop) {
-            appWindow.setAlwaysOnTop(true);
-            unlistenBlur();
-            setPined(true);
+        if (!embedded && alwaysOnTop !== null) {
+            appWindow.setAlwaysOnTop(alwaysOnTop);
+            setPined(alwaysOnTop);
         }
-    }, [alwaysOnTop]);
+    }, [embedded, alwaysOnTop]);
     // 保存窗口位置
     useEffect(() => {
-        if (windowPosition !== null && windowPosition === 'pre_state') {
+        if (!embedded && windowPosition !== null && windowPosition === 'pre_state') {
             const unlistenMove = listen('tauri://move', async () => {
                 if (moveTimeout) {
                     clearTimeout(moveTimeout);
@@ -137,7 +92,7 @@ export default function Translate() {
     }, [windowPosition]);
     // 保存窗口大小
     useEffect(() => {
-        if (rememberWindowSize !== null && rememberWindowSize) {
+        if (!embedded && rememberWindowSize !== null && rememberWindowSize) {
             const unlistenResize = listen('tauri://resize', async () => {
                 if (resizeTimeout) {
                     clearTimeout(resizeTimeout);
@@ -191,12 +146,12 @@ export default function Translate() {
 
     useEffect(() => {
         loadPluginList();
-        if (!unlisten) {
-            unlisten = listen('reload_plugin_list', loadPluginList);
-        }
+        const unlisten = listen('reload_plugin_list', loadPluginList);
+        return () => { unlisten.then((stop) => stop()); };
     }, []);
 
     const loadServiceInstanceConfigMap = async () => {
+        if (!translateServiceInstanceList || !recognizeServiceInstanceList || !ttsServiceInstanceList || !collectionServiceInstanceList) return;
         const config = {};
         for (const serviceInstanceKey of translateServiceInstanceList) {
             config[serviceInstanceKey] = (await store.get(serviceInstanceKey)) ?? {};
@@ -212,6 +167,12 @@ export default function Translate() {
         }
         setServiceInstanceConfigMap({ ...config });
     };
+    useEffect(() => {
+        const unlistenConfig = listen('service_config_changed', (event) => {
+            if ([...(translateServiceInstanceList ?? []), ...(recognizeServiceInstanceList ?? []), ...(ttsServiceInstanceList ?? []), ...(collectionServiceInstanceList ?? [])].includes(event.payload)) loadServiceInstanceConfigMap();
+        });
+        return () => { unlistenConfig.then((stop) => stop()); };
+    }, [translateServiceInstanceList, recognizeServiceInstanceList, ttsServiceInstanceList, collectionServiceInstanceList]);
     useEffect(() => {
         if (
             translateServiceInstanceList !== null &&
@@ -231,54 +192,63 @@ export default function Translate() {
     return (
         pluginList && (
             <div
-                className={`bg-background h-screen w-screen ${
-                    osType === 'Linux' && 'rounded-[10px] border-1 border-default-100'
-                }`}
+                className={
+                    embedded
+                        ? 'sui-embedded-translate'
+                        : `sui-popup bg-background h-screen w-screen ${
+                              osType === 'Linux' && 'rounded-[10px] border-1 border-default-100'
+                          }`
+                }
             >
-                <div
-                    className='fixed top-[5px] left-[5px] right-[5px] h-[30px]'
-                    data-tauri-drag-region='true'
-                />
-                <div className={`h-[35px] w-full flex ${osType === 'Darwin' ? 'justify-end' : 'justify-between'}`}>
-                    <Button
-                        isIconOnly
-                        size='sm'
-                        variant='flat'
-                        disableAnimation
-                        className='my-auto bg-transparent'
-                        onPress={() => {
-                            if (pined) {
-                                if (closeOnBlur) {
-                                    unlisten = listenBlur();
-                                }
-                                appWindow.setAlwaysOnTop(false);
-                            } else {
-                                unlistenBlur();
-                                appWindow.setAlwaysOnTop(true);
-                            }
+                {!embedded && (
+                    <>
+                        <div
+                            className='fixed top-[5px] left-[5px] right-[5px] h-[30px]'
+                            data-tauri-drag-region='true'
+                        />
+                        <div
+                            className={`h-[35px] w-full flex ${osType === 'Darwin' ? 'justify-end' : 'justify-between'}`}
+                        >
+                            <Button
+                                isIconOnly
+                                size='sm'
+                                variant='flat'
+                                disableAnimation
+                                className='my-auto bg-transparent'
+                                onPress={() => {
+                            appWindow.setAlwaysOnTop(!pined);
                             setPined(!pined);
-                        }}
-                    >
-                        <BsPinFill className={`text-[20px] ${pined ? 'text-primary' : 'text-default-400'}`} />
-                    </Button>
-                    <Button
-                        isIconOnly
-                        size='sm'
-                        variant='flat'
-                        disableAnimation
-                        className={`my-auto ${osType === 'Darwin' && 'hidden'} bg-transparent`}
-                        onPress={() => {
-                            void appWindow.close();
-                        }}
-                    >
-                        <AiFillCloseCircle className='text-[20px] text-default-400' />
-                    </Button>
-                </div>
-                <div className={`${osType === 'Linux' ? 'h-[calc(100vh-37px)]' : 'h-[calc(100vh-35px)]'} px-[8px]`}>
+                                }}
+                            >
+                                <BsPinFill className={`text-[20px] ${pined ? 'text-primary' : 'text-default-400'}`} />
+                            </Button>
+                            <Button
+                                isIconOnly
+                                size='sm'
+                                variant='flat'
+                                disableAnimation
+                                className={`my-auto ${osType === 'Darwin' && 'hidden'} bg-transparent`}
+                                onPress={() => {
+                                    void appWindow.close();
+                                }}
+                            >
+                                <AiFillCloseCircle className='text-[20px] text-default-400' />
+                            </Button>
+                        </div>
+                    </>
+                )}
+                <div
+                    className={
+                        embedded
+                            ? 'sui-embedded-body'
+                            : `${osType === 'Linux' ? 'h-[calc(100vh-37px)]' : 'h-[calc(100vh-35px)]'} px-[8px]`
+                    }
+                >
                     <div className='h-full overflow-y-auto'>
                         <div>
                             {serviceInstanceConfigMap !== null && (
                                 <SourceArea
+                                    embedded={embedded}
                                     pluginList={pluginList}
                                     serviceInstanceConfigMap={serviceInstanceConfigMap}
                                 />

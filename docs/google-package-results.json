@@ -1,0 +1,40 @@
+{
+  "verifiedAt": "2026-10-13T12:15:16.834222+08:00",
+  "executable": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/debug/bundle/macos/SuiTranslate.app/Contents/MacOS/SuiTranslate",
+  "sha256": "6c63af939dc9b896bc56b851a693afb685a6aaf2e6fd8a23ffee2f1d9c759b52",
+  "nativeRequests": [
+    "[2026-10-13][04:13:13][INFO][sui_translate::service_http] SERVICE_HTTP host=translate.google.com status=200 proxy=direct",
+    "[2026-10-13][04:13:41][INFO][sui_translate::service_http] SERVICE_HTTP host=translate.google.com status=200 proxy=direct",
+    "[2026-10-13][04:14:15][INFO][sui_translate::service_http] SERVICE_HTTP host=translate.google.com status=200 proxy=direct",
+    "[2026-10-13][04:14:26][INFO][sui_translate::service_http] SERVICE_HTTP host=translate.google.com status=200 proxy=direct",
+    "[2026-10-13][04:14:51][INFO][sui_translate::service_http] SERVICE_HTTP host=translate.google.com status=200 proxy=direct"
+  ],
+  "uiChecks": [
+    {
+      "name": "Packaged workspace Google translation",
+      "status": "passed",
+      "source": "Hello, world.",
+      "translation": "你好世界。"
+    },
+    {
+      "name": "Packaged Google settings connection test",
+      "status": "passed",
+      "source": "Hello, world.",
+      "translation": "连接成功 你好世界。"
+    },
+    {
+      "name": "Packaged floating window Google translation",
+      "status": "passed",
+      "source": "Good morning.",
+      "translation": "早上好。"
+    },
+    {
+      "name": "Packaged floating window retries the same text",
+      "status": "passed",
+      "source": "Good morning.",
+      "translation": "早上好。",
+      "detail": "A new real HTTP 200 request completed and the same translation was displayed again."
+    }
+  ],
+  "scope": "Actual native packaged application with public test text; no mocked responses or IPC"
+}

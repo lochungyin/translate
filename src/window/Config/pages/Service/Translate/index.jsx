@@ -1,6 +1,6 @@
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { Card, Spacer, Button, useDisclosure } from '@nextui-org/react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 
@@ -21,16 +21,9 @@ export default function Translate(props) {
     } = useDisclosure();
     const { isOpen: isSelectOpen, onOpen: onSelectOpen, onOpenChange: onSelectOpenChange } = useDisclosure();
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
-    const [currentConfigKey, setCurrentConfigKey] = useState('deepl');
+    const [currentConfigKey, setCurrentConfigKey] = useState('google');
     // now it's service instance list
-    const [translateServiceInstanceList, setTranslateServiceInstanceList] = useConfig('translate_service_list', [
-        'deepl',
-        'bing',
-        'lingva',
-        'yandex',
-        'google',
-        'ecdict',
-    ]);
+    const [translateServiceInstanceList, setTranslateServiceInstanceList] = useConfig('translate_service_list', ['google', 'youdao']);
 
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
@@ -67,7 +60,7 @@ export default function Translate(props) {
 
     return (
         <>
-            <Toaster />
+
             <Card
                 className={`${
                     osType === 'Linux' ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-120px)]'

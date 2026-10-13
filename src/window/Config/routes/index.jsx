@@ -8,8 +8,10 @@ import History from '../pages/History';
 import Hotkey from '../pages/Hotkey';
 import Backup from '../pages/Backup';
 import About from '../pages/About';
+import Workspace from '../pages/Workspace';
 
 const routes = [
+    { path: '/workspace', element: <Workspace /> },
     {
         path: '/general',
         element: <General />,
@@ -44,7 +46,7 @@ const routes = [
     },
     {
         path: '/',
-        element: <Navigate to='/general' />,
+        element: <Navigate to='/workspace' replace />,
     },
 ];
 

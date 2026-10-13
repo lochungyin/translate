@@ -10,9 +10,9 @@ mod hotkey;
 mod lang_detect;
 mod screenshot;
 mod server;
+mod service_http;
 mod system_ocr;
 mod tray;
-mod updater;
 mod window;
 
 use backup::*;
@@ -31,9 +31,8 @@ use tauri::api::notification::Notification;
 use tauri::Manager;
 use tauri_plugin_log::LogTarget;
 use tray::*;
-use updater::check_update;
+
 use window::config_window;
-use window::updater_window;
 
 // Global AppHandle
 pub static APP: OnceCell<tauri::AppHandle> = OnceCell::new();
@@ -43,13 +42,10 @@ pub struct StringWrapper(pub Mutex<String>);
 
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _, cwd| {
-            Notification::new(&app.config().tauri.bundle.identifier)
-                .title("The program is already running. Please do not start it again!")
-                .body(cwd)
-                .icon("pot")
-                .show()
-                .unwrap();
+        .plugin(tauri_plugin_single_instance::init(|_, _, _| {
+            if APP.get().is_some() {
+                config_window();
+            }
         }))
         .plugin(
             tauri_plugin_log::Builder::default()
@@ -69,8 +65,7 @@ fn main() {
             #[cfg(target_os = "macos")]
             {
                 app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-                let trusted =
-                    macos_accessibility_client::accessibility::application_is_trusted_with_prompt();
+                let trusted = macos_accessibility_client::accessibility::application_is_trusted();
                 info!("MacOS Accessibility Trusted: {}", trusted);
             }
             // Global AppHandle
@@ -78,13 +73,8 @@ fn main() {
             // Init Config
             info!("Init Config Store");
             init_config(app);
-            // Check First Run
-            if is_first_run() {
-                // Open Config Window
-                info!("First Run, opening config window");
-                config_window();
-            }
             app.manage(StringWrapper(Mutex::new("".to_string())));
+            config_window();
             // Update Tray Menu
             update_tray(app.app_handle(), "".to_string(), "".to_string());
             // Start http server
@@ -99,16 +89,20 @@ fn main() {
                     .show()
                     .unwrap(),
             }
+            // Preserve legacy proxy behavior for backup/plugin clients. Built-in
+            // translation and speech use service_http with explicit app settings.
             match get("proxy_enable") {
                 Some(v) => {
-                    if v.as_bool().unwrap() && get("proxy_host").map_or(false, |host| !host.as_str().unwrap().is_empty()) {
+                    if v.as_bool().unwrap_or(false)
+                        && get("proxy_host")
+                            .map_or(false, |host| !host.as_str().unwrap_or("").is_empty())
+                    {
                         let _ = set_proxy();
                     }
                 }
                 None => {}
             }
-            // Check Update
-            check_update(app.handle());
+
             if let Some(engine) = get("translate_detect_engine") {
                 if engine.as_str().unwrap() == "local" {
                     init_lang_detect();
@@ -128,7 +122,14 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            run_action,
+            translate_text,
+            set_clipboard_monitor,
             reload_store,
+            get_config_value,
+            set_config_value,
+            has_config_value,
+            delete_config_value,
             get_text,
             cut_image,
             get_base64,
@@ -136,11 +137,12 @@ fn main() {
             system_ocr,
             set_proxy,
             unset_proxy,
+            service_http::service_http_request,
+            service_http::service_http_status,
             run_binary,
             open_devtools,
             register_shortcut_by_frontend,
             update_tray,
-            updater_window,
             screenshot,
             lang_detect,
             webdav,

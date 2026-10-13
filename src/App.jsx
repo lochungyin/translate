@@ -9,25 +9,25 @@ import { invoke } from '@tauri-apps/api/tauri';
 import Screenshot from './window/Screenshot';
 import Translate from './window/Translate';
 import Recognize from './window/Recognize';
-import Updater from './window/Updater';
 import { store } from './utils/store';
 import Config from './window/Config';
 import { useConfig } from './hooks';
 import './style.css';
 import './i18n';
+import { listen } from '@tauri-apps/api/event';
+import toast, { Toaster } from 'react-hot-toast';
 
 const windowMap = {
     translate: <Translate />,
     screenshot: <Screenshot />,
     recognize: <Recognize />,
     config: <Config />,
-    updater: <Updater />,
 };
 
 export default function App() {
     const [devMode] = useConfig('dev_mode', false);
     const [appTheme] = useConfig('app_theme', 'system');
-    const [appLanguage] = useConfig('app_language', 'en');
+    const [appLanguage] = useConfig('app_language', 'zh_cn');
     const [appFont] = useConfig('app_font', 'default');
     const [appFallbackFont] = useConfig('app_fallback_font', 'default');
     const [appFontSize] = useConfig('app_font_size', 16);
@@ -35,7 +35,8 @@ export default function App() {
     const { i18n } = useTranslation();
 
     useEffect(() => {
-        store.load();
+        const unlisten = listen('action_error', (event) => toast.error(event.payload, { duration: 8000 }));
+        return () => { unlisten.then((stop) => stop()); };
     }, []);
 
     useEffect(() => {
@@ -104,14 +105,22 @@ export default function App() {
 
     useEffect(() => {
         if (appFont !== null && appFallbackFont !== null) {
-            document.documentElement.style.fontFamily = `"${appFont === 'default' ? 'sans-serif' : appFont}","${
-                appFallbackFont === 'default' ? 'sans-serif' : appFallbackFont
-            }"`;
+            const selectedFonts = [appFont, appFallbackFont]
+                .filter((font) => font && font !== 'default')
+                .map((font) => JSON.stringify(font));
+            document.documentElement.style.fontFamily = [
+                ...selectedFonts,
+                '-apple-system',
+                'BlinkMacSystemFont',
+                '"Segoe UI"',
+                '"Microsoft YaHei"',
+                'sans-serif',
+            ].join(',');
         }
         if (appFontSize !== null) {
             document.documentElement.style.fontSize = `${appFontSize}px`;
         }
     }, [appFont, appFallbackFont, appFontSize]);
 
-    return <BrowserRouter>{windowMap[appWindow.label]}</BrowserRouter>;
+    return <BrowserRouter><Toaster />{windowMap[appWindow.label]}</BrowserRouter>;
 }

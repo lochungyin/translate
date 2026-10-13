@@ -1,0 +1,35 @@
+[
+  {
+    "case": "direct-minimal",
+    "text": "Hello, world.",
+    "from": "en",
+    "to": "zh-CN",
+    "http": "200 application/json; charset=utf-8",
+    "error": "",
+    "body": ")]}'\n\n411\n[[\"wrb.fr\",\"MkEWBc\",\"[[null,null,null,[[[0,[[[null,13]],[true]]]],13],null,null,[\\\"Hello, world.\\\",\\\"en\\\",\\\"zh-CN\\\",true]],[[[null,null,null,null,null,[[\\\"你好世界。\\\",null,null,null,null,null,\\\"Hello, world.\\\",1]],null,null,null,[]]],\\\"zh-CN\\\",1,\\\"en\\\",[\\\"Hello, world.\\\",\\\"en\\\",\\\"zh-CN\\\",true]],\\\"en\\\",null,null,null,null,[[[0]]]]\",null,null,null,\"generic\"],[\"di\",47],[\"af.httprm\",46,\"-8095835746325578404\",225]]\n25\n[[\"e\",4,null,null,457]]\n",
+    "expected": "你好世界。",
+    "detectedLanguage": "en"
+  },
+  {
+    "case": "word-proxy",
+    "text": "hello",
+    "from": "auto",
+    "to": "zh-CN",
+    "http": "200 application/json; charset=utf-8",
+    "error": "",
+    "body": ")]}'\n\n386\n[[\"wrb.fr\",\"MkEWBc\",\"[[null,null,\\\"en\\\",[[[0,[[[null,5]],[true]]]],5],null,null,[\\\"hello\\\",\\\"auto\\\",\\\"zh-CN\\\",true]],[[[null,null,null,null,null,[[\\\"你好\\\",null,null,null,null,null,\\\"hello\\\",1]],null,null,null,[]]],\\\"zh-CN\\\",1,\\\"en\\\",[\\\"hello\\\",\\\"auto\\\",\\\"zh-CN\\\",true]],\\\"en\\\",null,null,null,null,[[[0]]]]\",null,null,null,\"generic\"],[\"di\",75],[\"af.httprm\",75,\"-8201914720366365496\",0]]\n25\n[[\"e\",4,null,null,426]]\n",
+    "expected": "你好",
+    "detectedLanguage": "en"
+  },
+  {
+    "case": "multiline-proxy",
+    "text": "你好。\n今天是晴天。",
+    "from": "auto",
+    "to": "en",
+    "http": "200 application/json; charset=utf-8",
+    "error": "",
+    "body": ")]}'\n\n507\n[[\"wrb.fr\",\"MkEWBc\",\"[[null,null,\\\"zh-CN\\\",[[[0,[[[null,3]],[true]]],[1,[[[null,4],[4,10]],[false,true]]]],10],null,null,[\\\"你好。\\\\n今天是晴天。\\\",\\\"auto\\\",\\\"en\\\",true]],[[[null,null,null,null,null,[[\\\"Hello.\\\",null,null,null,null,null,\\\"你好。\\\",1],[\\\"\\\\nIt's sunny.\\\",null,null,null,null,null,\\\"今天是晴天。\\\",1]],null,null,null,[]]],\\\"en\\\",1,\\\"zh-CN\\\",[\\\"你好。\\\\n今天是晴天。\\\",\\\"auto\\\",\\\"en\\\",true]],\\\"zh-CN\\\",null,null,null,null,[[[0]],[[0]]]]\",null,null,null,\"generic\"],[\"di\",742],[\"af.httprm\",742,\"-6521777780500157630\",0]]\n25\n[[\"e\",4,null,null,597]]\n",
+    "expected": "Hello.\nIt's sunny.",
+    "detectedLanguage": "zh-CN"
+  }
+]

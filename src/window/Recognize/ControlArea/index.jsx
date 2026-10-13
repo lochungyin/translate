@@ -1,6 +1,7 @@
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Button } from '@nextui-org/react';
 import { atom, useAtom, useSetAtom, useAtomValue } from 'jotai';
-import { fetch, Body } from '@tauri-apps/api/http';
+import { invoke } from '@tauri-apps/api';
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { HiTranslate } from 'react-icons/hi';
 import { GiCycle } from 'react-icons/gi';
@@ -28,7 +29,6 @@ export default function ControlArea(props) {
     const { serviceInstanceConfigMap, serviceInstanceList } = props;
     const pluginList = useAtomValue(pluginListAtom);
     const [recognizeLanguage] = useConfig('recognize_language', 'auto');
-    const [serverPort] = useConfig('server_port', 60828);
     const setRecognizeFlag = useSetAtom(recognizeFlagAtom);
     const [currentServiceInstanceKey, setCurrentServiceInstanceKey] = useAtom(currentServiceInstanceKeyAtom);
     const [language, setLanguage] = useAtom(languageAtom);
@@ -165,11 +165,9 @@ export default function ControlArea(props) {
                 startContent={<HiTranslate className='text-[16px]' />}
                 onPress={async () => {
                     if (text) {
-                        void fetch(`http://127.0.0.1:${serverPort}/translate`, {
-                            method: 'POST',
-                            body: Body.text(text),
-                            responseType: 2,
-                        });
+                        try {
+                            await invoke('translate_text', { text });
+                        } catch (error) { toast.error(error.toString()); }
                     }
                 }}
             >

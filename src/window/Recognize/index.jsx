@@ -18,38 +18,6 @@ import TextArea from './TextArea';
 
 export const pluginListAtom = atom();
 
-let blurTimeout = null;
-
-const listenBlur = () => {
-    return listen('tauri://blur', () => {
-        if (appWindow.label === 'recognize') {
-            if (blurTimeout) {
-                clearTimeout(blurTimeout);
-            }
-            // 50ms后关闭窗口，因为在 windows 下拖动窗口时会先切换成 blur 再立即切换成 focus
-            // 如果直接关闭将导致窗口无法拖动
-            blurTimeout = setTimeout(async () => {
-                await appWindow.close();
-            }, 50);
-        }
-    });
-};
-
-let unlisten = listenBlur();
-// 取消 blur 监听
-const unlistenBlur = () => {
-    unlisten.then((f) => {
-        f();
-    });
-};
-
-// 监听 focus 事件取消 blurTimeout 时间之内的关闭窗口
-void listen('tauri://focus', () => {
-    if (blurTimeout) {
-        clearTimeout(blurTimeout);
-    }
-});
-
 export default function Recognize() {
     const [pluginList, setPluginList] = useAtom(pluginListAtom);
     const [closeOnBlur] = useConfig('recognize_close_on_blur', false);
@@ -80,12 +48,19 @@ export default function Recognize() {
         setPluginList({ ...temp });
     };
     const loadServiceInstanceConfigMap = async () => {
+        if (!serviceInstanceList) return;
         const config = {};
         for (const serviceInstanceKey of serviceInstanceList) {
             config[serviceInstanceKey] = (await store.get(serviceInstanceKey)) ?? {};
         }
         setServiceInstanceConfigMap({ ...config });
     };
+    useEffect(() => {
+        const unlistenConfig = listen('service_config_changed', (event) => {
+            if ((serviceInstanceList ?? []).includes(event.payload)) loadServiceInstanceConfigMap();
+        });
+        return () => { unlistenConfig.then((stop) => stop()); };
+    }, [serviceInstanceList]);
     useEffect(() => {
         if (serviceInstanceList !== null) {
             loadServiceInstanceConfigMap();
@@ -95,13 +70,16 @@ export default function Recognize() {
     useEffect(() => {
         loadPluginList();
     }, []);
-    // 是否自动关闭窗口
     useEffect(() => {
-        if (closeOnBlur !== null && !closeOnBlur) {
-            unlistenBlur();
-        }
-    }, [closeOnBlur]);
-
+        if (closeOnBlur === null) return;
+        let timer;
+        const stops = [listen('tauri://blur', () => {
+            if (closeOnBlur && !pined && appWindow.label === 'recognize') {
+                timer = setTimeout(() => appWindow.close(), 100);
+            }
+        }), listen('tauri://focus', () => clearTimeout(timer)), listen('tauri://move', () => clearTimeout(timer))];
+        return () => { clearTimeout(timer); stops.forEach((stop) => stop.then((fn) => fn())); };
+    }, [closeOnBlur, pined]);
     return (
         pluginList &&
         serviceInstanceConfigMap !== null && (
@@ -122,15 +100,7 @@ export default function Recognize() {
                         disableAnimation
                         className='my-auto mx-[5px] bg-transparent'
                         onPress={() => {
-                            if (pined) {
-                                if (closeOnBlur) {
-                                    unlisten = listenBlur();
-                                }
-                                appWindow.setAlwaysOnTop(false);
-                            } else {
-                                unlistenBlur();
-                                appWindow.setAlwaysOnTop(true);
-                            }
+                            appWindow.setAlwaysOnTop(!pined);
                             setPined(!pined);
                         }}
                     >

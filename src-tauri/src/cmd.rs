@@ -1,4 +1,3 @@
-use crate::config::get;
 use crate::config::StoreWrapper;
 use crate::error::Error;
 use crate::StringWrapper;
@@ -96,21 +95,8 @@ pub fn copy_img(app_handle: tauri::AppHandle, width: usize, height: usize) -> Re
 }
 
 #[tauri::command]
-pub fn set_proxy() -> Result<bool, ()> {
-    let host = match get("proxy_host") {
-        Some(v) => v.as_str().unwrap().to_string(),
-        None => return Err(()),
-    };
-    let port = match get("proxy_port") {
-        Some(v) => v.as_i64().unwrap(),
-        None => return Err(()),
-    };
-    let no_proxy = match get("no_proxy") {
-        Some(v) => v.as_str().unwrap().to_string(),
-        None => return Err(()),
-    };
-    let proxy = format!("http://{}:{}", host, port);
-
+pub fn set_proxy() -> Result<bool, String> {
+    let (proxy, no_proxy) = crate::service_http::legacy_proxy_values()?;
     std::env::set_var("http_proxy", &proxy);
     std::env::set_var("https_proxy", &proxy);
     std::env::set_var("all_proxy", &proxy);
@@ -222,4 +208,21 @@ pub fn open_devtools(window: tauri::Window) {
     } else {
         window.close_devtools();
     }
+}
+
+#[tauri::command(async)]
+pub fn run_action(action: String) -> Result<bool, String> {
+    match action.as_str() {
+        "input_translate" => crate::window::input_translate(),
+        "selection_translate" => crate::window::selection_translate(),
+        "ocr_recognize" => return crate::window::capture_for_ocr(false),
+        "ocr_translate" => return crate::window::capture_for_ocr(true),
+        _ => return Err("Unknown translation action".to_string()),
+    }
+    Ok(true)
+}
+
+#[tauri::command(async)]
+pub fn translate_text(text: String) {
+    crate::window::text_translate(text);
 }

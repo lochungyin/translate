@@ -25,4 +25,10 @@ initStore().then(async () => {
             </NextThemesProvider>
         </NextUIProvider>
     );
+    if (import.meta.env.DEV && import.meta.env.VITE_SUI_NATIVE_SMOKE === '1') {
+        import('../tests/native-smoke.jsx').then(({ runNativeSmoke }) => runNativeSmoke());
+    }
+    if (import.meta.env.DEV && import.meta.env.VITE_SUI_GOOGLE_LIVE === '1') {
+        import('../tests/google-live.jsx').then(({ runGoogleLive }) => runGoogleLive());
+    }
 });

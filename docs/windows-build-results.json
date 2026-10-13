@@ -1,0 +1,82 @@
+{
+  "createdAt": "2026-10-13T16:19:01.309312+08:00",
+  "host": "macOS arm64",
+  "target": "x86_64-pc-windows-msvc",
+  "version": "0.1.0",
+  "profile": "release",
+  "artifacts": [
+    {
+      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/SuiTranslate_0.1.0_x64-setup.exe",
+      "name": "SuiTranslate_0.1.0_x64-setup.exe",
+      "bytes": 33972883,
+      "sha256": "98059bddb04f393377cfe289b45cedc8e5b5be140f726442a484ae8b62b8ed5f"
+    },
+    {
+      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/portable/SuiTranslate_0.1.0_x64-portable.zip",
+      "name": "SuiTranslate_0.1.0_x64-portable.zip",
+      "bytes": 34737715,
+      "sha256": "451f6599f3a321cd6d22a994a7b909c69ef0f6e91156e093a9e24d06c83151bd"
+    },
+    {
+      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/x86_64-pc-windows-msvc/release/SuiTranslate.exe",
+      "name": "SuiTranslate.exe",
+      "bytes": 50042368,
+      "sha256": "0064ce675b907741858b0078beadeab276b53976753895273e86ae1c895e8852"
+    }
+  ],
+  "installerPayload": [
+    "$PLUGINSDIR/System.dll",
+    "$PLUGINSDIR/modern-wizard.bmp",
+    "$PLUGINSDIR/nsDialogs.dll",
+    "$PLUGINSDIR/nsis_tauri_utils.dll",
+    "$PLUGINSDIR/StartMenu.dll",
+    "$PLUGINSDIR/LangDLL.dll",
+    "$TEMP/MicrosoftEdgeWebview2Setup.exe",
+    "SuiTranslate.exe",
+    "uninstall.exe"
+  ],
+  "imports": [
+    "api-ms-win-core-synch-l1-2-0.dll",
+    "user32.dll",
+    "kernel32.dll",
+    "ole32.dll",
+    "gdi32.dll",
+    "comctl32.dll",
+    "dwmapi.dll",
+    "api-ms-win-core-winrt-l1-1-0.dll",
+    "shell32.dll",
+    "advapi32.dll",
+    "ws2_32.dll",
+    "oleaut32.dll",
+    "uxtheme.dll",
+    "crypt32.dll",
+    "secur32.dll",
+    "ntdll.dll",
+    "bcrypt.dll",
+    "bcryptprimitives.dll",
+    "api-ms-win-crt-runtime-l1-1-0.dll",
+    "api-ms-win-crt-math-l1-1-0.dll",
+    "api-ms-win-crt-time-l1-1-0.dll",
+    "api-ms-win-crt-heap-l1-1-0.dll",
+    "api-ms-win-crt-utility-l1-1-0.dll",
+    "api-ms-win-crt-string-l1-1-0.dll",
+    "api-ms-win-crt-convert-l1-1-0.dll",
+    "api-ms-win-crt-stdio-l1-1-0.dll",
+    "api-ms-win-crt-locale-l1-1-0.dll"
+  ],
+  "checks": {
+    "windows_x64_gui_application": true,
+    "nsis_installer_integrity": true,
+    "nsis_embedded_executable_hash": true,
+    "webview2_bootstrapper_embedded": true,
+    "no_macos_ocr_resources": true,
+    "portable_zip_crc_and_executable_hash": true,
+    "requires_vc_redist_dll": false,
+    "windows_code_signed": false,
+    "windows_runtime_tested": false
+  },
+  "limitations": [
+    "Windows launch, Google online translation, WPS selection, screenshots and OCR require physical Windows validation.",
+    "Portable package requires WebView2 Runtime. Installer includes the bootstrapper; downloading Runtime requires network access."
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-13T03:43:13.700Z",
+  "tests": [
+    {
+      "name": "Google translation via real native transport",
+      "status": "blocked",
+      "detail": "Error: Google 请求失败 (429)，请检查网络或代理设置"
+    },
+    {
+      "name": "Google TTS real network and WebKit audio decoding",
+      "status": "passed",
+      "detail": {
+        "bytes": 15552,
+        "seconds": 1.944,
+        "sampleRate": 24000
+      }
+    }
+  ],
+  "proxyEnabled": false,
+  "transport": "Original Tauri default HTTP client"
+}

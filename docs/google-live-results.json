@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-13T04:11:46.829Z",
+  "tests": [
+    {
+      "name": "Google translation via real native transport",
+      "status": "passed",
+      "detail": "你好世界。"
+    },
+    {
+      "name": "Google multiline Chinese to English via native transport",
+      "status": "passed",
+      "detail": "Hello.\nIt's sunny."
+    },
+    {
+      "name": "Google language detection via shared web request",
+      "status": "passed",
+      "detail": "en"
+    },
+    {
+      "name": "Google TTS real network and WebKit audio decoding",
+      "status": "passed",
+      "detail": {
+        "bytes": 15552,
+        "seconds": 1.944,
+        "sampleRate": 24000
+      }
+    }
+  ],
+  "proxyEnabled": false,
+  "endpoint": {
+    "method": "POST",
+    "url": "https://translate.google.com/_/TranslateWebserverUi/data/batchexecute",
+    "protocol": "web_rpc"
+  },
+  "transport": {
+    "mode": "direct",
+    "generation": 1
+  }
+}

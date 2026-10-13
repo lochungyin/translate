@@ -25,3 +25,45 @@ html {
 *::-webkit-scrollbar-thumb:hover {
     background: #c0c1c550;
 }
+
+:root {
+    --sui-sidebar: #f2f5f3;
+    --sui-border: #dfe6e2;
+    --sui-muted: #65736c;
+    --sui-accent: #23664a;
+    --sui-hover: #e8eeeb;
+    --sui-selected: #dcece3;
+    --sui-result-header: #f3f6f4;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+}
+.dark {
+    --sui-sidebar: #18221c;
+    --sui-border: #344339;
+    --sui-muted: #a5b4aa;
+    --sui-accent: #8bd5a9;
+    --sui-hover: #25342b;
+    --sui-selected: #263f30;
+    --sui-result-header: #223027;
+}
+button {
+    white-space: nowrap;
+}
+button:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--sui-accent);
+    outline-offset: 3px;
+}
+.sui-popup {
+    padding-bottom: 8px;
+}
+.sui-popup .sui-source-label {
+    margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

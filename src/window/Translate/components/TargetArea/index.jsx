@@ -20,10 +20,11 @@ import PulseLoader from 'react-spinners/PulseLoader';
 import { TbTransformFilled } from 'react-icons/tb';
 import { HiOutlineVolumeUp } from 'react-icons/hi';
 import { semanticColors } from '@nextui-org/theme';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { MdContentCopy } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import Database from 'tauri-plugin-sql-api';
+import { getHistoryDatabase } from '../../../../utils/history';
+import { translationText } from '../../../../utils/translation_result';
 import { GiCycle } from 'react-icons/gi';
 import { useTheme } from 'next-themes';
 import { useAtomValue } from 'jotai';
@@ -34,7 +35,7 @@ import useMeasure from 'react-use-measure';
 import * as builtinCollectionServices from '../../../../services/collection';
 import { sourceLanguageAtom, targetLanguageAtom } from '../LanguageArea';
 import { useConfig, useToastStyle, useVoice } from '../../../../hooks';
-import { sourceTextAtom, detectLanguageAtom } from '../SourceArea';
+import { sourceTextAtom, detectLanguageAtom, translationRequestAtom } from '../SourceArea';
 import { invoke_plugin } from '../../../../utils/invoke_plugin';
 import * as builtinServices from '../../../../services/translate';
 import * as builtinTtsServices from '../../../../services/tts';
@@ -49,7 +50,7 @@ import {
     whetherPluginService,
 } from '../../../../utils/service_instance';
 
-let translateID = [];
+
 
 export default function TargetArea(props) {
     const { index, name, translateServiceInstanceList, pluginList, serviceInstanceConfigMap, ...drag } = props;
@@ -62,7 +63,7 @@ export default function TargetArea(props) {
 
     const [appFontSize] = useConfig('app_font_size', 16);
     const [collectionServiceList] = useConfig('collection_service_list', []);
-    const [ttsServiceList] = useConfig('tts_service_list', ['lingva_tts']);
+    const [ttsServiceList] = useConfig('tts_service_list', ['google_tts']);
     const [translateSecondLanguage] = useConfig('translate_second_language', 'en');
     const [historyDisable] = useConfig('history_disable', false);
     const [isLoading, setIsLoading] = useState(false);
@@ -72,6 +73,8 @@ export default function TargetArea(props) {
     const [error, setError] = useState('');
 
     const sourceText = useAtomValue(sourceTextAtom);
+    const translationRequest = useAtomValue(translationRequestAtom);
+    const translateID = useRef([]).current;
     const sourceLanguage = useAtomValue(sourceLanguageAtom);
     const targetLanguage = useAtomValue(targetLanguageAtom);
     const [autoCopy] = useConfig('translate_auto_copy', 'disable');
@@ -94,6 +97,8 @@ export default function TargetArea(props) {
 
     // listen to translation
     useEffect(() => {
+        translateID[index] = nanoid();
+        setIsLoading(false);
         setResult('');
         setError('');
         if (
@@ -115,6 +120,8 @@ export default function TargetArea(props) {
         }
     }, [
         sourceText,
+        translationRequest,
+        serviceInstanceConfigMap,
         sourceLanguage,
         targetLanguage,
         autoCopy,
@@ -125,26 +132,15 @@ export default function TargetArea(props) {
 
     // todo: history panel use service instance key
     const addToHistory = async (text, source, target, serviceInstanceKey, result) => {
-        const db = await Database.load('sqlite:history.db');
-
-        await db
-            .execute(
+        try {
+            const db = await getHistoryDatabase();
+            await db.execute(
                 'INSERT into history (text, source, target, service, result, timestamp) VALUES ($1, $2, $3, $4, $5, $6)',
-                [text, source, target, serviceInstanceKey, result, Date.now()]
-            )
-            .then(
-                (v) => {
-                    db.close();
-                },
-                (e) => {
-                    db.execute(
-                        'CREATE TABLE history(id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL,source TEXT NOT NULL,target TEXT NOT NULL,service TEXT NOT NULL, result TEXT NOT NULL,timestamp INTEGER NOT NULL)'
-                    ).then(() => {
-                        db.close();
-                        addToHistory(text, source, target, serviceInstanceKey, result);
-                    });
-                }
+                [text, source, target, serviceInstanceKey, translationText(result), Date.now()]
             );
+        } catch (error) {
+            logError(`History save failed: ${error}`);
+        }
     };
 
     function invokeOnce(fn) {
@@ -209,18 +205,18 @@ export default function TargetArea(props) {
                         if (index === 0 && !clipboardMonitor) {
                             switch (autoCopy) {
                                 case 'target':
-                                    writeText(v).then(() => {
+                                    writeText(translationText(v)).then(() => {
                                         if (hideWindow) {
                                             sendNotification({ title: t('common.write_clipboard'), body: v });
                                         }
                                     });
                                     break;
                                 case 'source_target':
-                                    writeText(sourceText.trim() + '\n\n' + v).then(() => {
+                                    writeText(sourceText.trim() + '\n\n' + translationText(v)).then(() => {
                                         if (hideWindow) {
                                             sendNotification({
                                                 title: t('common.write_clipboard'),
-                                                body: sourceText.trim() + '\n\n' + v,
+                                                body: sourceText.trim() + '\n\n' + translationText(v),
                                             });
                                         }
                                     });
@@ -234,11 +230,14 @@ export default function TargetArea(props) {
                         info(`[${currentTranslateServiceInstanceKey}]reject:` + e);
                         if (translateID[index] !== id) return;
                         setError(e.toString());
+                        setHide(false);
                         setIsLoading(false);
                     }
                 );
             } else {
                 setError('Language not supported');
+                setHide(false);
+                setIsLoading(false);
             }
         } else {
             const LanguageEnum = builtinServices[translateServiceName].Language;
@@ -282,18 +281,18 @@ export default function TargetArea(props) {
                             if (index === 0 && !clipboardMonitor) {
                                 switch (autoCopy) {
                                     case 'target':
-                                        writeText(v).then(() => {
+                                        writeText(translationText(v)).then(() => {
                                             if (hideWindow) {
                                                 sendNotification({ title: t('common.write_clipboard'), body: v });
                                             }
                                         });
                                         break;
                                     case 'source_target':
-                                        writeText(sourceText.trim() + '\n\n' + v).then(() => {
+                                        writeText(sourceText.trim() + '\n\n' + translationText(v)).then(() => {
                                             if (hideWindow) {
                                                 sendNotification({
                                                     title: t('common.write_clipboard'),
-                                                    body: sourceText.trim() + '\n\n' + v,
+                                                    body: sourceText.trim() + '\n\n' + translationText(v),
                                                 });
                                             }
                                         });
@@ -307,18 +306,21 @@ export default function TargetArea(props) {
                             info(`[${currentTranslateServiceInstanceKey}]reject:` + e);
                             if (translateID[index] !== id) return;
                             setError(e.toString());
+                            setHide(false);
                             setIsLoading(false);
                         }
                     );
             } else {
                 setError('Language not supported');
+                setHide(false);
+                setIsLoading(false);
             }
         }
     };
 
     // hide empty textarea
     useEffect(() => {
-        if (textAreaRef.current !== null) {
+        if (textAreaRef.current) {
             textAreaRef.current.style.height = '0px';
             if (result !== '') {
                 textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
@@ -339,31 +341,34 @@ export default function TargetArea(props) {
 
     // handle tts speak
     const handleSpeak = async () => {
-        const instanceKey = ttsServiceList[0];
+        await speak.prepare();
+        const instanceKey = ttsServiceList?.[0];
+        if (!instanceKey) throw new Error('请先配置朗读服务');
+        const spokenLanguage = sourceLanguage === 'auto' && targetLanguage === detectLanguage ? translateSecondLanguage : targetLanguage;
         if (getServiceSouceType(instanceKey) === ServiceSourceType.PLUGIN) {
             const pluginConfig = serviceInstanceConfigMap[instanceKey];
-            if (!(targetLanguage in ttsPluginInfo.language)) {
+            if (!(spokenLanguage in ttsPluginInfo.language)) {
                 throw new Error('Language not supported');
             }
             let [func, utils] = await invoke_plugin('tts', getServiceName(instanceKey));
-            let data = await func(result, ttsPluginInfo.language[targetLanguage], {
+            let data = await func(translationText(result), ttsPluginInfo.language[spokenLanguage], {
                 config: pluginConfig,
                 utils,
             });
-            speak(data);
+            await speak(data);
         } else {
-            if (!(targetLanguage in builtinTtsServices[getServiceName(instanceKey)].Language)) {
+            if (!(spokenLanguage in builtinTtsServices[getServiceName(instanceKey)].Language)) {
                 throw new Error('Language not supported');
             }
             const instanceConfig = serviceInstanceConfigMap[instanceKey];
             let data = await builtinTtsServices[getServiceName(instanceKey)].tts(
-                result,
-                builtinTtsServices[getServiceName(instanceKey)].Language[targetLanguage],
+                translationText(result),
+                builtinTtsServices[getServiceName(instanceKey)].Language[spokenLanguage],
                 {
                     config: instanceConfig,
                 }
             );
-            speak(data);
+            await speak(data);
         }
     };
 
@@ -376,9 +381,9 @@ export default function TargetArea(props) {
     return (
         <Card
             shadow='none'
-            className='rounded-[10px]'
+            className='sui-result rounded-[10px]'
         >
-            <Toaster />
+
             <CardHeader
                 className={`flex justify-between py-1 px-0 bg-content2 h-[30px] ${hide ? 'rounded-[10px]' : 'rounded-t-[10px]'}`}
                 {...drag}
@@ -482,6 +487,7 @@ export default function TargetArea(props) {
                         isIconOnly
                         variant='light'
                         className='h-[20px] w-[20px]'
+                        aria-label='展开或折叠结果'
                         onPress={() => setHide(!hide)}
                     >
                         {hide ? (
@@ -492,6 +498,7 @@ export default function TargetArea(props) {
                     </Button>
                 </div>
             </CardHeader>
+            {!isLoading && !result && !error && <p className='sui-result-empty'>{t('sui.empty')}</p>}
             <animated.div style={{ ...springs }}>
                 <div ref={boundRef}>
                     {/* result content */}
@@ -501,6 +508,7 @@ export default function TargetArea(props) {
                                 ref={textAreaRef}
                                 className={`text-[${appFontSize}px] h-0 resize-none bg-transparent select-text outline-none`}
                                 readOnly
+                                aria-label='译文'
                                 value={result}
                             />
                         ) : (
@@ -638,7 +646,7 @@ export default function TargetArea(props) {
                                     isIconOnly
                                     variant='light'
                                     size='sm'
-                                    isDisabled={typeof result !== 'string' || result === ''}
+                                    isDisabled={!translationText(result)}
                                     onPress={() => {
                                         handleSpeak().catch((e) => {
                                             toast.error(e.toString(), { style: toastStyle });
@@ -654,9 +662,9 @@ export default function TargetArea(props) {
                                     isIconOnly
                                     variant='light'
                                     size='sm'
-                                    isDisabled={typeof result !== 'string' || result === ''}
+                                    isDisabled={!translationText(result)}
                                     onPress={() => {
-                                        writeText(result);
+                                        writeText(translationText(result));
                                     }}
                                 >
                                     <MdContentCopy className='text-[16px]' />
@@ -725,11 +733,14 @@ export default function TargetArea(props) {
                                                     },
                                                     (e) => {
                                                         setError(e.toString());
+                                                        setHide(false);
                                                         setIsLoading(false);
                                                     }
                                                 );
                                             } else {
                                                 setError('Language not supported');
+                                                setHide(false);
+                                                setIsLoading(false);
                                             }
                                         } else {
                                             const LanguageEnum =
@@ -772,11 +783,14 @@ export default function TargetArea(props) {
                                                         },
                                                         (e) => {
                                                             setError(e.toString());
+                                                            setHide(false);
                                                             setIsLoading(false);
                                                         }
                                                     );
                                             } else {
                                                 setError('Language not supported');
+                                                setHide(false);
+                                                setIsLoading(false);
                                             }
                                         }
                                     }}

@@ -23,6 +23,7 @@ pub fn init_config(app: &mut tauri::App) {
         }
     }
     app.manage(StoreWrapper(Mutex::new(store)));
+    init_personal_defaults();
     let _ = check_service_available();
 }
 
@@ -51,47 +52,9 @@ fn check_available(list: Vec<String>, builtin: Vec<&str>, plugin: Vec<String>, k
 }
 
 pub fn check_service_available() -> Result<(), Error> {
-    let builtin_recognize_list: Vec<&str> = vec![
-        "baidu_ocr",
-        "baidu_accurate_ocr",
-        "baidu_img_ocr",
-        "iflytek_ocr",
-        "iflytek_intsig_ocr",
-        "iflytek_latex_ocr",
-        "qrcode",
-        "simple_latex_ocr",
-        "system",
-        "tencent_ocr",
-        "tencent_accurate_ocr",
-        "tencent_img_ocr",
-        "tesseract",
-        "volcengine_ocr",
-        "volcengine_multi_lang_ocr",
-    ];
-    let builtin_translate_list: Vec<&str> = vec![
-        "alibaba",
-        "baidu",
-        "baidu_field",
-        "bing",
-        "bing_dict",
-        "caiyun",
-        "cambridge_dict",
-        "chatglm",
-        "deepl",
-        "ecdict",
-        "lingva",
-        "geminipro",
-        "niutrans",
-        "ollama",
-        "openai",
-        "google",
-        "tencent",
-        "transmart",
-        "volcengine",
-        "yandex",
-        "youdao",
-    ];
-    let builtin_tts_list: Vec<&str> = vec!["lingva_tts"];
+    let builtin_recognize_list: Vec<&str> = vec!["system", "tesseract", "qrcode"];
+    let builtin_translate_list: Vec<&str> = vec!["google", "youdao"];
+    let builtin_tts_list: Vec<&str> = vec!["google_tts"];
     let builtin_collection_list: Vec<&str> = vec!["anki", "eudic"];
 
     let plugin_recognize_list: Vec<String> = get_plugin_list("recognize").unwrap_or_default();
@@ -181,8 +144,59 @@ pub fn set<T: serde::ser::Serialize>(key: &str, value: T) {
     store.save().unwrap();
 }
 
-pub fn is_first_run() -> bool {
+fn init_personal_defaults() {
+    let defaults = json!({
+        "app_language": "zh_cn",
+        "app_theme": "system",
+        "app_font_size": 14,
+        "transparent": false,
+        "check_update": false,
+        "server_port": 60829,
+        "translate_service_list": ["google", "youdao"],
+        "recognize_service_list": ["system", "tesseract"],
+        "tts_service_list": ["google_tts"],
+        "google": {"custom_url": "https://translate.google.com"},
+        "youdao": {"appkey": "", "key": ""},
+        "translate_detect_engine": "local",
+        "translate_window_width": 440,
+        "translate_window_height": 600,
+        "hotkey_selection_translate": "Alt+D",
+        "hotkey_input_translate": "Alt+A",
+        "hotkey_ocr_translate": "Alt+S",
+        "hotkey_ocr_recognize": "Alt+O"
+    });
+    for (key, value) in defaults.as_object().unwrap() {
+        if get(key).is_none() {
+            set(key, value);
+        }
+    }
+}
+
+#[tauri::command]
+pub fn get_config_value(key: String) -> Option<Value> {
+    get(&key)
+}
+
+#[tauri::command]
+pub fn has_config_value(key: String) -> bool {
     let state = APP.get().unwrap().state::<StoreWrapper>();
     let store = state.0.lock().unwrap();
-    store.is_empty()
+    store.has(key)
+}
+
+#[tauri::command]
+pub fn set_config_value(key: String, value: Value) -> Result<(), String> {
+    let state = APP.get().unwrap().state::<StoreWrapper>();
+    let mut store = state.0.lock().map_err(|e| e.to_string())?;
+    store.insert(key, value).map_err(|e| e.to_string())?;
+    store.save().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_config_value(key: String) -> Result<bool, String> {
+    let state = APP.get().unwrap().state::<StoreWrapper>();
+    let mut store = state.0.lock().map_err(|e| e.to_string())?;
+    let deleted = store.delete(key).map_err(|e| e.to_string())?;
+    store.save().map_err(|e| e.to_string())?;
+    Ok(deleted)
 }

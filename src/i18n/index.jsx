@@ -1,5 +1,6 @@
 import { initReactI18next } from 'react-i18next';
 import i18n from 'i18next';
+import { zh, en } from './sui';
 import zh_CN from './locales/zh_CN.json';
 import zh_TW from './locales/zh_TW.json';
 import en_US from './locales/en_US.json';
@@ -58,5 +59,20 @@ i18n.use(initReactI18next).init({
         he: he_IL,
     },
 });
+
+i18n.addResourceBundle(
+    'zh_cn',
+    'translation',
+    { sui: zh, services: { tts: { google_tts: { title: 'Google 语音' } } } },
+    true,
+    true
+);
+i18n.addResourceBundle(
+    'en',
+    'translation',
+    { sui: en, services: { tts: { google_tts: { title: 'Google TTS' } } } },
+    true,
+    true
+);
 
 export default i18n;

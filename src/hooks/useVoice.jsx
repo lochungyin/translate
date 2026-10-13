@@ -1,28 +1,31 @@
-import { useCallback } from 'react';
-let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-let source = null;
+let audioContext;
+let source;
 
-export const useVoice = () => {
-    const playOrStop = useCallback((data) => {
-        if (source) {
-            // 如果正在播放，停止播放
-            source.stop();
-            source.disconnect();
-            source = null;
-        } else {
-            // 如果没在播放，开始播放
-            audioContext.decodeAudioData(new Uint8Array(data).buffer, (buffer) => {
-                source = audioContext.createBufferSource();
-                source.buffer = buffer;
-                source.connect(audioContext.destination);
-                source.start();
-                source.onended = () => {
-                    source.disconnect();
-                    source = null;
-                };
-            });
-        }
-    });
-
-    return playOrStop;
+const prepare = async () => {
+    audioContext ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioContext.state === 'suspended') await audioContext.resume();
 };
+
+const playOrStop = async (data) => {
+    if (source) {
+        const playing = source;
+        source = null;
+        playing.stop();
+        playing.disconnect();
+        return;
+    }
+    await prepare();
+    const buffer = await audioContext.decodeAudioData(new Uint8Array(data).buffer);
+    const playing = audioContext.createBufferSource();
+    playing.buffer = buffer;
+    playing.connect(audioContext.destination);
+    source = playing;
+    playing.onended = () => {
+        playing.disconnect();
+        if (source === playing) source = null;
+    };
+    playing.start();
+};
+playOrStop.prepare = prepare;
+
+export const useVoice = () => playOrStop;

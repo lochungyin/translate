@@ -1,5 +1,4 @@
-import { unregister, isRegistered } from '@tauri-apps/api/globalShortcut';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { CardBody } from '@nextui-org/react';
 import { Button } from '@nextui-org/react';
@@ -45,18 +44,14 @@ const keyMap = {
     Suspend: 'Suspend',
 };
 
-export default function Hotkey() {
-    const [selectionTranslate, setSelectionTranslate] = useConfig('hotkey_selection_translate', '');
-    const [inputTranslate, setInputTranslate] = useConfig('hotkey_input_translate', '');
-    const [ocrRecognize, setOcrRecognize] = useConfig('hotkey_ocr_recognize', '');
-    const [ocrTranslate, setOcrTranslate] = useConfig('hotkey_ocr_translate', '');
-
+function HotkeyRow({ name, label, fallback }) {
+    const [saved, setSaved] = useConfig(name, fallback);
+    const [draft, setDraft] = React.useState(null);
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
-
     function keyDown(e, setKey) {
         e.preventDefault();
-        if (e.keyCode === 8) {
+        if (e.key === 'Backspace' || e.key === 'Delete') {
             setKey('');
         } else {
             let newValue = '';
@@ -93,155 +88,38 @@ export default function Hotkey() {
         }
     }
 
-    function registerHandler(name, key) {
-        isRegistered(key).then((res) => {
-            if (res) {
-                toast.error(t('config.hotkey.is_register'), { style: toastStyle });
-            } else {
-                invoke('register_shortcut_by_frontend', {
-                    name: name,
-                    shortcut: key,
-                }).then(
-                    () => {
-                        toast.success(t('config.hotkey.success'), { style: toastStyle });
-                    },
-                    (e) => {
-                        toast.error(e, { style: toastStyle });
-                    }
-                );
-            }
-        });
-    }
 
-    return (
-        <Card>
-            <Toaster />
-            <CardBody>
-                <div className='config-item'>
-                    <h3 className='my-auto'>{t('config.hotkey.selection_translate')}</h3>
-                    {selectionTranslate !== null && (
-                        <Input
-                            type='hotkey'
-                            variant='bordered'
-                            value={selectionTranslate}
-                            label={t('config.hotkey.set_hotkey')}
-                            className='max-w-[50%]'
-                            onKeyDown={(e) => {
-                                keyDown(e, setSelectionTranslate);
-                            }}
-                            onFocus={() => {
-                                unregister(selectionTranslate);
-                                setSelectionTranslate('');
-                            }}
-                            endContent={
-                                <Button
-                                    size='sm'
-                                    variant='flat'
-                                    className={`${selectionTranslate === '' && 'hidden'}`}
-                                    onPress={() => {
-                                        registerHandler('hotkey_selection_translate', selectionTranslate);
-                                    }}
-                                >
-                                    {t('common.ok')}
-                                </Button>
-                            }
-                        />
-                    )}
-                </div>
-                <div className='config-item'>
-                    <h3 className='my-auto'>{t('config.hotkey.input_translate')}</h3>
-                    {inputTranslate !== null && (
-                        <Input
-                            type='hotkey'
-                            variant='bordered'
-                            value={inputTranslate}
-                            label={t('config.hotkey.set_hotkey')}
-                            className='max-w-[50%]'
-                            onKeyDown={(e) => {
-                                keyDown(e, setInputTranslate);
-                            }}
-                            onFocus={() => {
-                                unregister(inputTranslate);
-                                setInputTranslate('');
-                            }}
-                            endContent={
-                                <Button
-                                    size='sm'
-                                    variant='flat'
-                                    className={`${inputTranslate === '' && 'hidden'}`}
-                                    onPress={() => {
-                                        registerHandler('hotkey_input_translate', inputTranslate);
-                                    }}
-                                >
-                                    {t('common.ok')}
-                                </Button>
-                            }
-                        />
-                    )}
-                </div>
-                <div className='config-item'>
-                    <h3 className='my-auto'>{t('config.hotkey.ocr_recognize')}</h3>
-                    {ocrRecognize !== null && (
-                        <Input
-                            type='hotkey'
-                            variant='bordered'
-                            value={ocrRecognize}
-                            label={t('config.hotkey.set_hotkey')}
-                            className='max-w-[50%]'
-                            onKeyDown={(e) => {
-                                keyDown(e, setOcrRecognize);
-                            }}
-                            onFocus={() => {
-                                unregister(ocrRecognize);
-                                setOcrRecognize('');
-                            }}
-                            endContent={
-                                <Button
-                                    size='sm'
-                                    variant='flat'
-                                    className={`${ocrRecognize === '' && 'hidden'}`}
-                                    onPress={() => {
-                                        registerHandler('hotkey_ocr_recognize', ocrRecognize);
-                                    }}
-                                >
-                                    {t('common.ok')}
-                                </Button>
-                            }
-                        />
-                    )}
-                </div>
-                <div className='config-item'>
-                    <h3 className='my-auto'>{t('config.hotkey.ocr_translate')}</h3>
-                    {ocrTranslate !== null && (
-                        <Input
-                            type='hotkey'
-                            variant='bordered'
-                            value={ocrTranslate}
-                            label={t('config.hotkey.set_hotkey')}
-                            className='max-w-[50%]'
-                            onKeyDown={(e) => {
-                                keyDown(e, setOcrTranslate);
-                            }}
-                            onFocus={() => {
-                                unregister(ocrTranslate);
-                                setOcrTranslate('');
-                            }}
-                            endContent={
-                                <Button
-                                    size='sm'
-                                    variant='flat'
-                                    className={`${ocrTranslate === '' && 'hidden'}`}
-                                    onPress={() => {
-                                        registerHandler('hotkey_ocr_translate', ocrTranslate);
-                                    }}
-                                >
-                                    {t('common.ok')}
-                                </Button>
-                            }
-                        />
-                    )}
-                </div>
-            </CardBody>
-        </Card>
+    const apply = async () => {
+        try {
+            await invoke('register_shortcut_by_frontend', { name, shortcut: draft ?? saved });
+            await setSaved(draft ?? saved, true);
+            setDraft(null);
+            toast.success(t('config.hotkey.success'), { style: toastStyle });
+        } catch (error) {
+            toast.error(error.toString(), { style: toastStyle });
+        }
+    };
+    return saved !== null && (
+        <div className='config-item'>
+            <h3>{t(label)}</h3>
+            <Input
+                aria-label={t(label)}
+                variant='bordered'
+                value={draft ?? saved}
+                label={t('config.hotkey.set_hotkey')}
+                className='max-w-[50%]'
+                onKeyDown={(event) => keyDown(event, setDraft)}
+                endContent={<Button size='sm' onPress={apply}>{t('common.ok')}</Button>}
+            />
+        </div>
     );
+}
+
+export default function Hotkey() {
+    return <Card><CardBody>
+        <HotkeyRow name='hotkey_selection_translate' label='config.hotkey.selection_translate' fallback='Alt+D' />
+        <HotkeyRow name='hotkey_input_translate' label='config.hotkey.input_translate' fallback='Alt+A' />
+        <HotkeyRow name='hotkey_ocr_recognize' label='config.hotkey.ocr_recognize' fallback='Alt+O' />
+        <HotkeyRow name='hotkey_ocr_translate' label='config.hotkey.ocr_translate' fallback='Alt+S' />
+    </CardBody></Card>;
 }

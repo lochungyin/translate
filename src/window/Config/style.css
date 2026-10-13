@@ -1,5 +1,323 @@
 .config-item {
-    margin: 10px 0;
+    margin: 12px 0;
     display: flex;
     justify-content: space-between;
+    gap: 18px;
+    align-items: center;
+}
+.sui-shell {
+    display: grid;
+    grid-template-columns: 204px minmax(0, 1fr);
+    height: 100dvh;
+    color: hsl(var(--nextui-foreground));
+    background: hsl(var(--nextui-background));
+}
+.sui-sidebar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--sui-sidebar);
+    border-right: 1px solid var(--sui-border);
+    user-select: none;
+}
+.sui-brand {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 46px 22px 30px;
+}
+.sui-brand img {
+    width: 40px;
+    height: 40px;
+}
+.sui-brand strong {
+    display: block;
+    font-size: 21px;
+    font-weight: 650;
+    letter-spacing: 2px;
+}
+.sui-brand span {
+    display: block;
+    font-size: 11px;
+    color: var(--sui-muted);
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+}
+.sui-nav {
+    padding: 0 12px;
+    overflow-y: auto;
+}
+.sui-nav-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 11px 13px;
+    border-radius: 8px;
+    width: 100%;
+    margin: 3px 0;
+    text-align: left;
+    font-size: 13px;
+    color: var(--sui-muted);
+    transition: background 0.15s;
+}
+.sui-nav-item:hover {
+    background: var(--sui-hover);
+    color: hsl(var(--nextui-foreground));
+}
+.sui-nav-item.is-active {
+    background: var(--sui-selected);
+    color: var(--sui-accent);
+    font-weight: 600;
+}
+.sui-nav-divider {
+    margin-top: 24px;
+}
+.sui-sidebar-footer {
+    display: grid;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--sui-muted);
+    margin-top: auto;
+    padding: 24px;
+}
+.sui-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.sui-titlebar {
+    min-height: 44px;
+    padding: 6px 12px 6px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--sui-border);
+    font-size: 12px;
+    color: var(--sui-muted);
+    user-select: none;
+}
+.sui-content {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px;
+    flex: 1;
+}
+.sui-content > div {
+    max-width: 960px;
+    margin-inline: auto;
+}
+.sui-content [data-slot='base'] {
+    box-shadow: none;
+}
+.sui-workspace {
+    max-width: 900px;
+}
+.sui-workspace-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 4px 0 22px;
+}
+.sui-workspace-heading h1 {
+    font-size: 25px;
+    font-weight: 650;
+    letter-spacing: -0.6px;
+}
+.sui-workspace-heading p {
+    font-size: 12px;
+    color: var(--sui-muted);
+    margin-top: 5px;
+}
+.sui-workspace-heading label {
+    font-size: 12px;
+}
+.sui-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+.sui-actions button {
+    border-width: 1px;
+    background: hsl(var(--nextui-content1));
+    font-size: 12px;
+}
+.sui-actions .sui-service-link {
+    margin-left: auto;
+    background: transparent;
+}
+.sui-embedded-translate {
+    width: 100%;
+}
+.sui-embedded-body {
+    padding: 0;
+}
+.sui-embedded-body > div {
+    overflow: visible;
+}
+.sui-source-label {
+    color: var(--sui-muted);
+    font-size: 12px;
+    margin: 0 0 8px 2px;
+}
+.sui-source > section,
+.sui-source > div[data-slot='base'] {
+    border: 1px solid var(--sui-border);
+}
+.sui-source textarea {
+    font-size: inherit;
+    min-height: 92px;
+    line-height: 1.8;
+}
+.sui-source textarea::placeholder {
+    color: var(--sui-muted);
+    font-size: 13px;
+}
+.sui-source footer {
+    padding: 8px 10px;
+}
+.sui-result {
+    border: 1px solid var(--sui-border);
+    background: hsl(var(--nextui-content1));
+}
+.sui-result header {
+    min-height: 40px;
+    background: var(--sui-result-header);
+}
+.sui-result textarea {
+    line-height: 1.8;
+}
+.sui-result-empty {
+    padding: 22px 14px;
+    color: var(--sui-muted);
+    font-size: 12px;
+}
+.sui-setup-note {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: var(--sui-sidebar);
+    border: 1px solid var(--sui-border);
+    border-radius: 10px;
+    margin-top: 18px;
+}
+.sui-setup-note img {
+    width: 23px;
+    height: 23px;
+}
+.sui-setup-note strong {
+    font-size: 12px;
+    font-weight: 600;
+}
+.sui-setup-note p {
+    font-size: 11px;
+    color: var(--sui-muted);
+    margin-top: 3px;
+}
+.sui-setup-note button {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.sui-shortcut-note {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 22px 2px 10px;
+    color: var(--sui-muted);
+    font-size: 11px;
+}
+.sui-shortcut-note kbd {
+    margin-left: 6px;
+    padding: 3px 5px;
+    border: 1px solid var(--sui-border);
+    border-radius: 4px;
+    font-family: inherit;
+}
+.sui-shortcut-note button {
+    margin-left: auto;
+    color: var(--sui-accent);
+}
+.sui-about {
+    padding: 50px 20px;
+    max-width: 620px !important;
+}
+.sui-about > img {
+    width: 72px;
+    margin-bottom: 22px;
+}
+.sui-about h1 {
+    font-size: 28px;
+    font-weight: 650;
+}
+.sui-about p {
+    color: var(--sui-muted);
+    line-height: 1.8;
+    font-size: 13px;
+    margin: 14px 0;
+}
+.sui-about-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 28px 0;
+}
+.sui-about-attribution {
+    padding-top: 24px;
+    border-top: 1px solid var(--sui-border);
+}
+@media (max-width: 800px) {
+    .sui-shell {
+        grid-template-columns: 172px minmax(0, 1fr);
+    }
+    .sui-content {
+        padding: 18px;
+    }
+    .sui-workspace-heading {
+        flex-wrap: wrap;
+    }
+    .sui-brand {
+        padding-inline: 18px;
+    }
+}
+@media (max-width: 580px) {
+    .sui-shell {
+        grid-template-columns: 58px minmax(0, 1fr);
+    }
+    .sui-brand {
+        padding: 40px 11px 20px;
+    }
+    .sui-brand img {
+        width: 34px;
+        height: 34px;
+    }
+    .sui-brand > div,
+    .sui-nav-item span,
+    .sui-sidebar-footer {
+        display: none;
+    }
+    .sui-nav {
+        padding: 0 7px;
+    }
+    .sui-nav-item {
+        padding: 11px;
+    }
+    .sui-content {
+        padding: 12px;
+    }
+    .sui-actions .sui-service-link {
+        margin-left: 0;
+    }
+    .sui-setup-note {
+        flex-wrap: wrap;
+    }
+    .sui-titlebar {
+        padding-left: 12px;
+    }
+}
+
+.sui-setup-note button {
+    color: var(--sui-accent);
 }

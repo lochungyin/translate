@@ -1,0 +1,51 @@
+[
+  {
+    "name": "state and configuration lifecycle with native Store",
+    "status": "passed",
+    "detail": "Immediate state reads, awaited config saves and service-key switching passed with native Store"
+  },
+  {
+    "name": "system OCR via native IPC",
+    "status": "passed",
+    "detail": "Hello Sui Translate 2026 Native OCR test"
+  },
+  {
+    "name": "Google live translation",
+    "status": "blocked",
+    "detail": "Error: Google 请求失败 (429)，请检查网络或代理设置"
+  },
+  {
+    "name": "Google TTS real network and audio decoding",
+    "status": "passed",
+    "detail": {
+      "bytes": 15552,
+      "seconds": 1.944,
+      "sampleRate": 24000
+    }
+  },
+  {
+    "name": "Youdao live translation",
+    "status": "blocked",
+    "detail": "Error: Requires Youdao app ID and secret"
+  },
+  {
+    "name": "native SQLite clear then insert",
+    "status": "passed",
+    "detail": "Table survives clear and accepts new records in isolated test database"
+  },
+  {
+    "name": "native clipboard write/read/restore",
+    "status": "passed",
+    "detail": "Readback matches; previous text restored"
+  },
+  {
+    "name": "clipboard monitoring opens real translation window",
+    "status": "passed",
+    "detail": "Clipboard change reached native translation state and opened the real window"
+  },
+  {
+    "name": "shortcut conflict preserves existing bindings",
+    "status": "passed",
+    "detail": "Conflict rejected; both old shortcuts remain registered"
+  }
+]
