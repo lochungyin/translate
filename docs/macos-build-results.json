@@ -35,7 +35,7 @@
     "arm64_system_ocr_bundled": true,
     "developer_id_signed": false,
     "notarized": false,
-    "new_release_ui_tested": false
+    "new_release_ui_tested": true
   },
   "validation": {
     "frontend_tests_passed": 12,
@@ -44,7 +44,37 @@
   },
   "limitations": [
     "Local ad-hoc signature only; no Apple Developer ID signing or notarization.",
-    "The development Mac was locked during final packaging, so the new Release UI was not retested.",
-    "Accessibility and screen-recording permissions may require rebinding after installing the new build."
-  ]
+    "The new Release process is not trusted for Accessibility; permission rebinding and physical cross-app shortcut validation remain pending.",
+    "Popup input was tested while pinned to avoid automation-triggered blur; this does not validate physical global shortcuts or all blur behavior.",
+    "Screenshot and OCR were not retested in this Release UI check."
+  ],
+  "validatedAt": "2026-10-14T16:30:41.035875+08:00",
+  "runtimeValidation": {
+    "appVersionInAboutPage": "0.1.1",
+    "runningExecutableSha256": "07253d69b5d57171ff7f67d7def386f140e0aecabbee270c6b65c7f04e0108c7",
+    "matchesReleasedExecutable": true,
+    "workspace": {
+      "source": "Hello world.",
+      "googleResult": "你好世界。",
+      "youdaoResult": "你好世界。",
+      "googleHttpStatus": 200,
+      "youdaoHttpStatus": 200,
+      "sameTextResubmitPassed": true
+    },
+    "popup": {
+      "source": "Good morning.",
+      "googleResult": "早上好。",
+      "youdaoResult": "早上好。",
+      "googleHttpStatus": 200,
+      "youdaoHttpStatus": 200,
+      "pinnedDuringAutomation": true
+    },
+    "accessibilityTrusted": false,
+    "selectionPermissionMessageVisible": true,
+    "typingClearsPermissionMessage": true,
+    "inputActionClearsPermissionMessage": true,
+    "physicalSelectionShortcutRetested": false,
+    "originalDebugProcessRestored": true,
+    "restoredProcessAccessibilityTrusted": true
+  }
 }
