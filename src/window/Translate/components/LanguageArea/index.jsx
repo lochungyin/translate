@@ -41,17 +41,19 @@ export default function LanguageArea() {
     return (
         <Card
             shadow='none'
-            className='bg-content2 h-[35px] rounded-[10px]'
+            className='sui-language-bar bg-content2 rounded-[10px]'
         >
-            <CardFooter className='bg-content2 flex justify-between p-0 rounded-[10px]'>
-                <div className='flex'>
+            <CardFooter className='sui-language-controls bg-content2 rounded-[10px]'>
+                <div className='min-w-0'>
                     <Dropdown>
                         <DropdownTrigger>
                             <Button
+                                size='sm'
                                 radius='sm'
                                 variant='light'
+                                className='sui-language-select'
                             >
-                                {t(`languages.${sourceLanguage}`)}
+                                <span className='truncate'>{t(`languages.${sourceLanguage}`)}</span>
                             </Button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -74,6 +76,7 @@ export default function LanguageArea() {
                         size='sm'
                         variant='light'
                         className='text-[20px]'
+                        aria-label={t('sui.swap_languages')}
                         onPress={async () => {
                             if (sourceLanguage !== 'auto') {
                                 const oldSourceLanguage = sourceLanguage;
@@ -99,14 +102,16 @@ export default function LanguageArea() {
                         <BiTransferAlt />
                     </Button>
                 </div>
-                <div className='flex'>
+                <div className='min-w-0'>
                     <Dropdown>
                         <DropdownTrigger>
                             <Button
+                                size='sm'
                                 radius='sm'
                                 variant='light'
+                                className='sui-language-select'
                             >
-                                {t(`languages.${targetLanguage}`)}
+                                <span className='truncate'>{t(`languages.${targetLanguage}`)}</span>
                             </Button>
                         </DropdownTrigger>
                         <DropdownMenu

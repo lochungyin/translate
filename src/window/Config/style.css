@@ -5,6 +5,18 @@
     gap: 18px;
     align-items: center;
 }
+.sui-hotkey-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    flex: 0 1 65%;
+    min-width: 0;
+}
+.sui-hotkey-controls .sui-hotkey-input {
+    flex: 1 1 240px;
+    min-width: 0;
+}
 .sui-shell {
     display: grid;
     grid-template-columns: 204px minmax(0, 1fr);
@@ -25,6 +37,7 @@
     gap: 12px;
     align-items: center;
     padding: 46px 22px 30px;
+    flex-shrink: 0;
 }
 .sui-brand img {
     width: 40px;
@@ -46,6 +59,7 @@
 .sui-nav {
     padding: 0 12px;
     overflow-y: auto;
+    min-height: 0;
 }
 .sui-nav-item {
     display: flex;
@@ -59,6 +73,9 @@
     font-size: 13px;
     color: var(--sui-muted);
     transition: background 0.15s;
+}
+.sui-nav-item svg {
+    flex-shrink: 0;
 }
 .sui-nav-item:hover {
     background: var(--sui-hover);
@@ -79,9 +96,11 @@
     color: var(--sui-muted);
     margin-top: auto;
     padding: 24px;
+    flex-shrink: 0;
 }
 .sui-main {
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
 }
@@ -95,14 +114,17 @@
     font-size: 12px;
     color: var(--sui-muted);
     user-select: none;
+    flex-shrink: 0;
 }
 .sui-content {
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 24px;
     flex: 1;
 }
-.sui-content > div {
+.sui-content > div,
+.sui-content > section {
     max-width: 960px;
     margin-inline: auto;
 }
@@ -157,6 +179,106 @@
 .sui-embedded-body > div {
     overflow: visible;
 }
+.sui-service-tabs {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+}
+.sui-service-panel {
+    width: 100%;
+    min-width: 0;
+}
+.sui-service-panel .sui-service-card,
+.sui-service-list {
+    min-width: 0;
+    overflow: visible;
+}
+.sui-service-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+.sui-service-actions button {
+    height: auto;
+    min-height: 40px;
+    white-space: normal;
+}
+.sui-service-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+.sui-service-identity {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+.sui-service-identity h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.sui-service-identity > :not(h2),
+.sui-service-controls {
+    flex-shrink: 0;
+}
+.sui-service-controls {
+    display: flex;
+    align-items: center;
+}
+.sui-history-content {
+    overflow: hidden;
+}
+.sui-history {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+}
+.sui-history-table {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+.sui-history-table-wrapper {
+    min-height: 0;
+    overflow: auto;
+}
+.sui-history .sui-history-grid {
+    table-layout: fixed;
+    width: 100%;
+    min-width: max(660px, 41.25rem);
+}
+.sui-history-icon {
+    width: 30px;
+}
+.sui-history-language {
+    width: 38px;
+}
+.sui-history-date {
+    width: 9rem;
+}
+.sui-history-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sui-history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 12px;
+    flex-shrink: 0;
+}
+.sui-history-actions nav {
+    margin: 0;
+}
 .sui-source-label {
     color: var(--sui-muted);
     font-size: 12px;
@@ -207,6 +329,11 @@
 .sui-setup-note img {
     width: 23px;
     height: 23px;
+    flex-shrink: 0;
+}
+.sui-setup-note > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 .sui-setup-note strong {
     font-size: 12px;
@@ -280,6 +407,24 @@
     }
     .sui-brand {
         padding-inline: 18px;
+    }
+    .config-item {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .config-item > h3 {
+        flex: 1 1 160px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+    .sui-hotkey-controls {
+        flex-basis: 100%;
+    }
+    .sui-service-item {
+        flex-wrap: wrap;
+    }
+    .sui-service-controls {
+        margin-left: auto;
     }
 }
 @media (max-width: 580px) {

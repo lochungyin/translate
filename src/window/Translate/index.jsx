@@ -51,11 +51,11 @@ export default function Translate({ embedded = false }) {
     useEffect(() => {
         if (embedded || closeOnBlur === null) return;
         let timer;
-        const stops = [listen('tauri://blur', () => {
+        const stops = [appWindow.listen('tauri://blur', () => {
             if (closeOnBlur && !pined && appWindow.label === 'translate') {
                 timer = setTimeout(() => appWindow.close(), 100);
             }
-        }), listen('tauri://focus', () => clearTimeout(timer)), listen('tauri://move', () => clearTimeout(timer))];
+        }), appWindow.listen('tauri://focus', () => clearTimeout(timer)), appWindow.listen('tauri://move', () => clearTimeout(timer))];
         return () => { clearTimeout(timer); stops.forEach((stop) => stop.then((fn) => fn())); };
     }, [embedded, closeOnBlur, pined]);
     useEffect(() => {
@@ -67,7 +67,7 @@ export default function Translate({ embedded = false }) {
     // 保存窗口位置
     useEffect(() => {
         if (!embedded && windowPosition !== null && windowPosition === 'pre_state') {
-            const unlistenMove = listen('tauri://move', async () => {
+            const unlistenMove = appWindow.listen('tauri://move', async () => {
                 if (moveTimeout) {
                     clearTimeout(moveTimeout);
                 }
@@ -93,7 +93,7 @@ export default function Translate({ embedded = false }) {
     // 保存窗口大小
     useEffect(() => {
         if (!embedded && rememberWindowSize !== null && rememberWindowSize) {
-            const unlistenResize = listen('tauri://resize', async () => {
+            const unlistenResize = appWindow.listen('tauri://resize', async () => {
                 if (resizeTimeout) {
                     clearTimeout(resizeTimeout);
                 }
@@ -195,7 +195,7 @@ export default function Translate({ embedded = false }) {
                 className={
                     embedded
                         ? 'sui-embedded-translate'
-                        : `sui-popup bg-background h-screen w-screen ${
+                        : `sui-popup bg-background ${
                               osType === 'Linux' && 'rounded-[10px] border-1 border-default-100'
                           }`
                 }
@@ -207,7 +207,7 @@ export default function Translate({ embedded = false }) {
                             data-tauri-drag-region='true'
                         />
                         <div
-                            className={`h-[35px] w-full flex ${osType === 'Darwin' ? 'justify-end' : 'justify-between'}`}
+                            className={`sui-popup-titlebar h-[35px] w-full flex ${osType === 'Darwin' ? 'justify-end' : 'justify-between'}`}
                         >
                             <Button
                                 isIconOnly
@@ -241,10 +241,10 @@ export default function Translate({ embedded = false }) {
                     className={
                         embedded
                             ? 'sui-embedded-body'
-                            : `${osType === 'Linux' ? 'h-[calc(100vh-37px)]' : 'h-[calc(100vh-35px)]'} px-[8px]`
+                            : 'sui-popup-body px-[8px]'
                     }
                 >
-                    <div className='h-full overflow-y-auto'>
+                    <div className={embedded ? 'sui-embedded-scroll' : 'sui-popup-scroll'}>
                         <div>
                             {serviceInstanceConfigMap !== null && (
                                 <SourceArea

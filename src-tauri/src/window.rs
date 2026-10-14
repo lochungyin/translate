@@ -1,17 +1,26 @@
-use std::fs;
+use std::{fs, sync::Mutex};
 
 use crate::config::get;
 use crate::config::set;
-use crate::StringWrapper;
 use crate::APP;
 use dirs::cache_dir;
 use log::{info, warn};
+use serde::Serialize;
 use tauri::Manager;
 use tauri::Monitor;
 use tauri::Window;
 use tauri::WindowBuilder;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use window_shadows::set_shadow;
+
+#[derive(Clone, Default, Serialize)]
+pub struct TranslationRequest {
+    pub id: u64,
+    pub text: String,
+    pub error: Option<String>,
+}
+
+pub struct TranslationRequestState(pub Mutex<TranslationRequest>);
 
 // Get daemon window instance
 fn get_daemon_window() -> Window {
@@ -230,21 +239,17 @@ fn translate_window() -> Window {
 pub fn selection_translate() {
     std::thread::spawn(|| {
         #[cfg(target_os = "macos")]
-        if !macos_accessibility_client::accessibility::application_is_trusted() {
-            config_window();
-            let _ = APP.get().unwrap().emit_all(
-                "action_error",
-                "划词需要辅助功能权限，请在系统设置 → 隐私与安全性 → 辅助功能中允许随译",
-            );
-            return;
+        {
+            let trusted = macos_accessibility_client::accessibility::application_is_trusted();
+            info!("Selection accessibility trusted: {}", trusted);
+            if !trusted {
+                translation_error("macOS 尚未信任当前随译进程。请在系统设置 → 隐私与安全性 → 辅助功能中允许随译；若开关已经开启，请移除旧条目并重新添加当前应用，然后退出重开");
+                return;
+            }
         }
         let text = selection::get_text();
         if text.trim().is_empty() {
-            config_window();
-            let _ = APP.get().unwrap().emit_all(
-                "action_error",
-                "未读取到选中文字，请先在其他应用中选中文字，再按划词快捷键",
-            );
+            translation_error("未读取到选中文字，请先在其他应用中选中文字，再按划词快捷键；也可以在此输入或粘贴文字");
             return;
         }
         text_translate(text);
@@ -252,45 +257,53 @@ pub fn selection_translate() {
 }
 
 pub fn input_translate() {
+    open_translation("[INPUT_TRANSLATE]".into(), None, true);
+}
+
+fn translation_error(message: &str) {
+    open_translation("[INPUT_TRANSLATE]".into(), Some(message.into()), false);
+}
+
+fn open_translation(text: String, error: Option<String>, center_input: bool) {
     let app_handle = APP.get().unwrap();
-    // Clear State
-    let state: tauri::State<StringWrapper> = app_handle.state();
-    state
-        .0
-        .lock()
-        .unwrap()
-        .replace_range(.., "[INPUT_TRANSLATE]");
+    // Keep the request until the WebView subscribes, including first-window errors.
+    let request = {
+        let state: tauri::State<TranslationRequestState> = app_handle.state();
+        let mut request = state.0.lock().unwrap();
+        request.id += 1;
+        request.text = text;
+        request.error = error;
+        request.clone()
+    };
     let window = translate_window();
     let position_type = match get("translate_window_position") {
         Some(v) => v.as_str().unwrap().to_string(),
         None => "mouse".to_string(),
     };
-    if position_type == "mouse" {
+    if center_input && position_type == "mouse" {
         window.center().unwrap();
     }
 
-    window.emit("new_text", "[INPUT_TRANSLATE]").unwrap();
+    let visible = request.error.is_some()
+        || request.text == "[INPUT_TRANSLATE]"
+        || !get("translate_hide_window")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+    if visible {
+        let _ = window.show();
+        let _ = window.set_focus();
+    } else {
+        let _ = window.hide();
+    }
+    window.emit("translation_request", request).unwrap();
 }
 
 pub fn text_translate(text: String) {
-    let app_handle = APP.get().unwrap();
-    // Clear State
-    let state: tauri::State<StringWrapper> = app_handle.state();
-    state.0.lock().unwrap().replace_range(.., &text);
-    let window = translate_window();
-    window.emit("new_text", text).unwrap();
+    open_translation(text, None, false);
 }
 
 pub fn image_translate() {
-    let app_handle = APP.get().unwrap();
-    let state: tauri::State<StringWrapper> = app_handle.state();
-    state
-        .0
-        .lock()
-        .unwrap()
-        .replace_range(.., "[IMAGE_TRANSLATE]");
-    let window = translate_window();
-    window.emit("new_text", "[IMAGE_TRANSLATE]").unwrap();
+    open_translation("[IMAGE_TRANSLATE]".into(), None, false);
 }
 
 pub fn recognize_window() {

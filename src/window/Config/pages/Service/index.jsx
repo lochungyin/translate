@@ -62,7 +62,14 @@ export default function Service() {
     }, []);
     return (
         pluginList !== null && (
-            <Tabs className='flex justify-center max-h-[calc(100%-40px)] overflow-y-auto'>
+            <Tabs
+                aria-label={t('config.service.title')}
+                classNames={{
+                    base: 'sui-service-tabs',
+                    tabList: 'max-w-full overflow-x-auto',
+                    panel: 'sui-service-panel',
+                }}
+            >
                 <Tab
                     key='translate'
                     title={t(`config.service.translate`)}

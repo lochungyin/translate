@@ -35,6 +35,8 @@ export default function SideBar() {
                 <button
                     key={key}
                     type='button'
+                    aria-label={key === 'workspace' ? t('sui.workspace') : t(`config.${key}.label`)}
+                    title={key === 'workspace' ? t('sui.workspace') : t(`config.${key}.label`)}
                     className={`sui-nav-item ${location.pathname === `/${key}` ? 'is-active' : ''} ${index === 2 ? 'sui-nav-divider' : ''}`}
                     aria-current={location.pathname === `/${key}` ? 'page' : undefined}
                     onClick={() => navigate(`/${key}`)}

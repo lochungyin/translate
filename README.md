@@ -2,7 +2,9 @@
 
 基于 [Pot Desktop](https://github.com/pot-app/pot-desktop) 的个人跨应用翻译桌面软件。保留 Tauri / Rust 的原生交互，使用简洁的灰绿色界面。内置翻译服务仅提供 Google 和有道。
 
-当前 macOS 版本已修复 Google 在线翻译并重新打包。工作台、翻译浮窗和测试连接均已获得真实 Google 译文；Google 检测、语音返回/解码也已验证。有道仍需应用 ID / 密钥，截图和划词需要用户在系统设置中授予相应权限。详细验收边界见 [验证记录](docs/VALIDATION.md)。
+当前版本 **v0.1.1** 更新了工作台与浮窗布局、快捷键设置、划词错误提示和 macOS 应用包签名。安装包提供 **Windows x64** 与 **Mac M 系列（arm64）**，从 [GitHub Release](https://github.com/lochungyin/translate/releases/tag/v0.1.1) 下载。更新内容与验证范围见 [发布说明](docs/releases/v0.1.1.md)。
+
+Google 在线翻译已修复；工作台、翻译浮窗和测试连接均已获得真实 Google 译文。有道需配置应用 ID / 密钥，截图和划词需要用户在系统设置中授予相应权限。详细验收边界见 [验证记录](docs/VALIDATION.md)。
 
 ## 功能
 
@@ -40,7 +42,7 @@ pnpm build          # 前端生产构建
 pnpm tauri build    # 为当前平台生成安装包
 ```
 
-Windows 本机构建 `pnpm tauri build --bundles nsis`，产物在 `src-tauri/target/release/bundle/nsis/`。仓库提供手动触发的 Windows 构建工作流，仅上传构建附件，不自动发布 Release。
+Windows 本机构建 `pnpm tauri build --target x86_64-pc-windows-msvc --bundles nsis -- --locked`，产物在 `src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/`。Mac M 系列构建 `pnpm tauri build --target aarch64-apple-darwin --bundles app,dmg -- --locked`，产物在 `src-tauri/target/aarch64-apple-darwin/release/bundle/`。仓库提供手动触发的 Windows / macOS 构建工作流，使用锁文件并上传构建附件。
 
 当前已在 Mac 上生成 **Windows x64 安装包与免安装 ZIP**，包含本次 Google 修复。文件位置、WebView2 要求及构建说明见 [Windows 使用说明](docs/WINDOWS.md)。包格式、依赖与完整性检查通过；实际 Windows 启动与 WPS 交互仍需实机验收。
 

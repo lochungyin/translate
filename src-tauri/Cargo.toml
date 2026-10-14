@@ -1,6 +1,6 @@
 [package]
 name = "sui-translate"
-version = "0.1.0"
+version = "0.1.1"
 description = "Sui Translate - personal cross-app translator based on Pot"
 authors = ["pot-app"]
 license = "GPL-3.0-only"

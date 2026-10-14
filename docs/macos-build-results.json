@@ -1,0 +1,50 @@
+{
+  "createdAt": "2026-10-14T15:19:53.751926+08:00",
+  "host": "macOS arm64",
+  "target": "aarch64-apple-darwin",
+  "version": "0.1.1",
+  "profile": "release",
+  "minimumSystemVersion": "11.0",
+  "artifacts": [
+    {
+      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/SuiTranslate_0.1.1_aarch64.dmg",
+      "name": "SuiTranslate_0.1.1_aarch64.dmg",
+      "bytes": 35444425,
+      "sha256": "93164e813aee34d42859d2f5288d3f80c5ba1a4c45a5e2df68578efb210c43e9"
+    },
+    {
+      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/aarch64-apple-darwin/release/bundle/macos/SuiTranslate.app/Contents/MacOS/SuiTranslate",
+      "name": "SuiTranslate",
+      "bytes": 52625408,
+      "sha256": "07253d69b5d57171ff7f67d7def386f140e0aecabbee270c6b65c7f04e0108c7"
+    }
+  ],
+  "resources": [
+    "icon.icns",
+    "resources/ocr-aarch64-apple-darwin",
+    "resources/ocr-x86_64-apple-darwin"
+  ],
+  "checks": {
+    "arm64_application": true,
+    "version_and_identifier_match": true,
+    "app_deep_strict_signature": true,
+    "dmg_signature": true,
+    "dmg_integrity": true,
+    "dmg_embedded_app_signature": true,
+    "dmg_embedded_executable_hash": true,
+    "arm64_system_ocr_bundled": true,
+    "developer_id_signed": false,
+    "notarized": false,
+    "new_release_ui_tested": false
+  },
+  "validation": {
+    "frontend_tests_passed": 12,
+    "native_network_tests_passed": 3,
+    "rust_format_check": true
+  },
+  "limitations": [
+    "Local ad-hoc signature only; no Apple Developer ID signing or notarization.",
+    "The development Mac was locked during final packaging, so the new Release UI was not retested.",
+    "Accessibility and screen-recording permissions may require rebinding after installing the new build."
+  ]
+}

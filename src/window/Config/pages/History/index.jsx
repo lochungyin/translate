@@ -16,7 +16,6 @@ import * as builtinServices from '../../../../services/translate';
 import { useConfig, useToastStyle } from '../../../../hooks';
 import { LanguageFlag } from '../../../../utils/language';
 import { store } from '../../../../utils/store';
-import { osType } from '../../../../utils/env';
 import {
     ServiceSourceType,
     ServiceType,
@@ -120,18 +119,18 @@ export default function History() {
 
     return (
         pluginList !== null && (
-            <>
-
+            <div className='sui-history'>
                 <Table
+                    layout='fixed'
                     fullWidth
                     hideHeader
                     selectionMode='single'
                     selectionBehavior='toggle'
                     aria-label='History Table'
                     classNames={{
-                        base: `${
-                            osType === 'Linux' ? 'h-[calc(100vh-130px)]' : 'h-[calc(100vh-100px)]'
-                        } overflow-y-auto`,
+                        base: 'sui-history-table',
+                        wrapper: 'sui-history-table-wrapper',
+                        table: 'sui-history-grid',
                         td: 'px-0',
                     }}
                     onRowAction={(id) => {
@@ -157,7 +156,7 @@ export default function History() {
                                 [ServiceSourceType.PLUGIN]: pluginList[ServiceType.TRANSLATE],
                             }) && (
                                 <TableRow key={item.id}>
-                                    <TableCell>
+                                    <TableCell className='sui-history-icon'>
                                         {getServiceSouceType(item.service) === ServiceSourceType.PLUGIN ? (
                                             <img
                                                 src={pluginList['translate'][getServiceName(item.service)].icon}
@@ -173,35 +172,23 @@ export default function History() {
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        <p
-                                            className={`whitespace-nowrap ${
-                                                osType === 'Linux'
-                                                    ? 'w-[calc((100vw-287px-26px-60px-140px-30px)*0.5)]'
-                                                    : 'w-[calc((100vw-287px-26px-60px-140px)*0.5)]'
-                                            } text-ellipsis overflow-hidden`}
-                                        >
+                                        <p className='sui-history-text' title={item.text}>
                                             {item.text}
                                         </p>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className='sui-history-language'>
                                         <span className={`w-[30px] fi fi-${LanguageFlag[item.source]}`} />
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className='sui-history-language'>
                                         <span className={`w-[30px] fi fi-${LanguageFlag[item.target]}`} />
                                     </TableCell>
                                     <TableCell>
-                                        <p
-                                            className={`whitespace-nowrap ${
-                                                osType === 'Linux'
-                                                    ? 'w-[calc((100vw-287px-26px-60px-140px-30px)*0.5)]'
-                                                    : 'w-[calc((100vw-287px-26px-60px-140px)*0.5)]'
-                                            } text-ellipsis overflow-hidden`}
-                                        >
+                                        <p className='sui-history-text' title={item.result}>
                                             {item.result}
                                         </p>
                                     </TableCell>
-                                    <TableCell>
-                                        <p className='text-center whitespace-nowrap w-[140px]'>
+                                    <TableCell className='sui-history-date'>
+                                        <p className='text-center whitespace-nowrap'>
                                             {formatDate(new Date(item.timestamp))}
                                         </p>
                                     </TableCell>
@@ -210,11 +197,11 @@ export default function History() {
                         }
                     </TableBody>
                 </Table>
-                <div className='mt-[8px] flex justify-around'>
+                <div className='sui-history-actions'>
                     <Pagination
                         showControls
                         isCompact
-                        total={Math.ceil(total / 20)}
+                        total={Math.max(1, Math.ceil(total / 20))}
                         page={page}
                         onChange={setPage}
                     />
@@ -373,7 +360,7 @@ export default function History() {
                         }
                     </ModalContent>
                 </Modal>
-            </>
+            </div>
         )
     );
 }

@@ -27,8 +27,8 @@ export default function ServiceItem(props) {
         <></>
     ) : (
         serviceInstanceConfig !== null && (
-            <div className='bg-content2 rounded-md px-[10px] py-[20px] flex justify-between'>
-                <div className='flex'>
+            <div className='sui-service-item bg-content2 rounded-md px-[10px] py-[20px]'>
+                <div className='sui-service-identity'>
                     <div
                         {...drag}
                         className='text-2xl my-auto'
@@ -63,7 +63,7 @@ export default function ServiceItem(props) {
                         </>
                     )}
                 </div>
-                <div className='flex'>
+                <div className='sui-service-controls'>
                     <Button
                         isIconOnly
                         size='sm'

@@ -14,7 +14,7 @@ import { LuDelete } from 'react-icons/lu';
 import { invoke } from '@tauri-apps/api';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { getServiceName, getServiceSouceType, ServiceSourceType } from '../../../../utils/service_instance';
-import { useConfig, useSyncAtom, useVoice, useToastStyle } from '../../../../hooks';
+import { useConfig, useSyncAtom, useVoice, useToastStyle, useTextareaAutoHeight } from '../../../../hooks';
 import { invoke_plugin } from '../../../../utils/invoke_plugin';
 import * as recognizeServices from '../../../../services/recognize';
 import * as builtinTtsServices from '../../../../services/tts';
@@ -49,14 +49,17 @@ export default function SourceArea(props) {
     const [ttsPluginInfo, setTtsPluginInfo] = useState();
     const [speaking, setSpeaking] = useState(false);
     const [windowType, setWindowType] = useState(embedded ? '[INPUT_TRANSLATE]' : '[SELECTION_TRANSLATE]');
+    const [actionError, setActionError] = useState(null);
+    const lastRequestId = useRef(0);
     const toastStyle = useToastStyle();
     const { t } = useTranslation();
     const textAreaRef = useRef();
     const speak = useVoice();
 
-    const handleNewText = async (text) => {
+    const handleNewText = async (text, error = null) => {
+        setActionError(error);
         if (!embedded) {
-            if (hideWindow && text !== '[INPUT_TRANSLATE]') {
+            if (hideWindow && !error && text !== '[INPUT_TRANSLATE]') {
                 await appWindow.hide();
             } else {
                 await appWindow.show();
@@ -155,10 +158,16 @@ export default function SourceArea(props) {
     handleNewTextRef.current = handleNewText;
     useEffect(() => {
         if (embedded || hideWindow === null || deleteNewline === null || incrementalTranslate === null || !recognizeServiceList || !recognizeLanguage) return;
-        const unlisten = listen('new_text', (event) => handleNewTextRef.current(event.payload));
-        // A new window can receive its event before its webview is ready.
-        unlisten.then(() => invoke('get_text')).then((text) => handleNewTextRef.current(text));
-        return () => { unlisten.then((stop) => stop()); };
+        let active = true;
+        const receive = (request) => {
+            if (!active || request.id <= lastRequestId.current) return;
+            lastRequestId.current = request.id;
+            void handleNewTextRef.current(request.text, request.error);
+        };
+        const unlisten = appWindow.listen('translation_request', (event) => receive(event.payload));
+        // Subscribe before reading the snapshot; ignore a snapshot older than an event.
+        unlisten.then(() => invoke('get_translation_request')).then(receive);
+        return () => { active = false; unlisten.then((stop) => stop()); };
     }, [embedded, hideWindow !== null && deleteNewline !== null && incrementalTranslate !== null && !!recognizeServiceList && !!recognizeLanguage]);
 
     useEffect(() => {
@@ -171,10 +180,7 @@ export default function SourceArea(props) {
         }
     }, [ttsServiceList]);
 
-    useEffect(() => {
-        textAreaRef.current.style.height = '50px';
-        textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
-    }, [sourceText]);
+    useTextareaAutoHeight(textAreaRef, sourceText, appFontSize);
 
     const detect_language = async (text) => {
         try {
@@ -188,6 +194,7 @@ export default function SourceArea(props) {
     const sourceTextChangeTimer = useRef(null);
     useEffect(() => () => clearTimeout(sourceTextChangeTimer.current), []);
     const changeSourceText = async (text) => {
+        setActionError(null);
         setDetectLanguage('');
         await setSourceText(text);
         if (dynamicTranslate) {
@@ -302,19 +309,21 @@ export default function SourceArea(props) {
 
     return (
         <div className={`sui-source ${!embedded && hideSource && windowType !== '[INPUT_TRANSLATE]' ? 'hidden' : ''}`}>
+            {actionError && <div role='alert' className='rounded-lg bg-warning-50 text-warning-800 px-3 py-2 mb-3 text-sm'>{actionError}</div>}
             <div className='sui-source-label'>{t('sui.source')}</div>
             <Card
                 shadow='none'
                 className='bg-content1 rounded-[10px] mt-[1px] pb-0'
             >
 
-                <CardBody className='bg-content1 p-[12px] pb-0 max-h-[40vh] overflow-y-auto'>
+                <CardBody className='sui-source-body bg-content1 p-[12px] pb-0 max-h-[40vh] overflow-y-auto'>
                     <textarea
                         aria-label={t('sui.source')}
                         placeholder={t('sui.source_hint')}
                         autoFocus
                         ref={textAreaRef}
-                        className={`text-[${appFontSize}px] bg-content1 h-full resize-none outline-none`}
+                        className='bg-content1 w-full min-w-0 resize-none outline-none'
+                        style={{ fontSize: appFontSize ? `${appFontSize}px` : undefined }}
                         value={sourceText}
                         onKeyDown={keyDown}
                         onChange={(e) => {
@@ -324,8 +333,8 @@ export default function SourceArea(props) {
                     />
                 </CardBody>
 
-                <CardFooter className='bg-content1 rounded-none rounded-b-[10px] flex justify-between px-[12px] p-[5px]'>
-                    <div className='flex justify-start'>
+                <CardFooter as='footer' className='sui-source-toolbar bg-content1 rounded-none rounded-b-[10px] flex justify-between px-[12px] p-[5px]'>
+                    <div className='sui-source-tools flex justify-start'>
                         <ButtonGroup className='mr-[5px]'>
                             <Tooltip content={t('translate.speak')}>
                                 <Button

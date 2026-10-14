@@ -1,36 +1,36 @@
 {
-  "createdAt": "2026-10-13T16:19:01.309312+08:00",
+  "createdAt": "2026-10-14T15:18:07.240312+08:00",
   "host": "macOS arm64",
   "target": "x86_64-pc-windows-msvc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "profile": "release",
   "artifacts": [
     {
-      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/SuiTranslate_0.1.0_x64-setup.exe",
-      "name": "SuiTranslate_0.1.0_x64-setup.exe",
-      "bytes": 33972883,
-      "sha256": "98059bddb04f393377cfe289b45cedc8e5b5be140f726442a484ae8b62b8ed5f"
+      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/SuiTranslate_0.1.1_x64-setup.exe",
+      "name": "SuiTranslate_0.1.1_x64-setup.exe",
+      "bytes": 33964699,
+      "sha256": "c1e5a72b7e1862ff36fbb595ad68e5120f268b65a54cbb5e18203b65b530d050"
     },
     {
-      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/portable/SuiTranslate_0.1.0_x64-portable.zip",
-      "name": "SuiTranslate_0.1.0_x64-portable.zip",
-      "bytes": 34737715,
-      "sha256": "451f6599f3a321cd6d22a994a7b909c69ef0f6e91156e093a9e24d06c83151bd"
+      "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/portable/SuiTranslate_0.1.1_x64-portable.zip",
+      "name": "SuiTranslate_0.1.1_x64-portable.zip",
+      "bytes": 34738181,
+      "sha256": "291b17c32a8ac182bf2e1062493404a34f97c3cc2e52da122500959409dd020b"
     },
     {
       "path": "/Users/caspian/workspace/projects/lochungyin/translate/src-tauri/target/x86_64-pc-windows-msvc/release/SuiTranslate.exe",
       "name": "SuiTranslate.exe",
-      "bytes": 50042368,
-      "sha256": "0064ce675b907741858b0078beadeab276b53976753895273e86ae1c895e8852"
+      "bytes": 50065920,
+      "sha256": "209ea224b9b8e456c4455dd2c2b7988af784dc66d2c416c1edcd532d03e76767"
     }
   ],
   "installerPayload": [
+    "$PLUGINSDIR/LangDLL.dll",
+    "$PLUGINSDIR/StartMenu.dll",
     "$PLUGINSDIR/System.dll",
     "$PLUGINSDIR/modern-wizard.bmp",
     "$PLUGINSDIR/nsDialogs.dll",
     "$PLUGINSDIR/nsis_tauri_utils.dll",
-    "$PLUGINSDIR/StartMenu.dll",
-    "$PLUGINSDIR/LangDLL.dll",
     "$TEMP/MicrosoftEdgeWebview2Setup.exe",
     "SuiTranslate.exe",
     "uninstall.exe"
@@ -66,6 +66,7 @@
   ],
   "checks": {
     "windows_x64_gui_application": true,
+    "version_resource_matches": true,
     "nsis_installer_integrity": true,
     "nsis_embedded_executable_hash": true,
     "webview2_bootstrapper_embedded": true,

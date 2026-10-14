@@ -6,7 +6,6 @@ import React, { useState } from 'react';
 
 import { useToastStyle } from '../../../../../hooks';
 import SelectPluginModal from '../SelectPluginModal';
-import { osType } from '../../../../../utils/env';
 import { useConfig, deleteKey } from '../../../../../hooks';
 import ServiceItem from './ServiceItem';
 import SelectModal from './SelectModal';
@@ -62,9 +61,7 @@ export default function Tts(props) {
         <>
 
             <Card
-                className={`${
-                    osType === 'Linux' ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-120px)]'
-                } overflow-y-auto p-5 flex justify-between`}
+                className='sui-service-card p-5'
             >
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable
@@ -73,7 +70,7 @@ export default function Tts(props) {
                     >
                         {(provided) => (
                             <div
-                                className='overflow-y-auto h-full'
+                                className='sui-service-list'
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                             >
@@ -112,14 +109,13 @@ export default function Tts(props) {
                     </Droppable>
                 </DragDropContext>
                 <Spacer y={2} />
-                <div className='flex'>
+                <div className='sui-service-actions'>
                     <Button
                         fullWidth
                         onPress={onSelectOpen}
                     >
                         {t('config.service.add_builtin_service')}
                     </Button>
-                    <Spacer x={2} />
                     <Button
                         fullWidth
                         onPress={onSelectPluginOpen}

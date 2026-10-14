@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
 
 import SelectPluginModal from '../SelectPluginModal';
-import { osType } from '../../../../../utils/env';
 import { useConfig, deleteKey } from '../../../../../hooks';
 import ServiceItem from './ServiceItem';
 import SelectModal from './SelectModal';
@@ -53,9 +52,7 @@ export default function Collection(props) {
     return (
         <>
             <Card
-                className={`${
-                    osType === 'Linux' ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-120px)]'
-                } overflow-y-auto p-5 flex justify-between`}
+                className='sui-service-card p-5'
             >
                 <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable
@@ -64,7 +61,7 @@ export default function Collection(props) {
                     >
                         {(provided) => (
                             <div
-                                className='overflow-y-auto h-full'
+                                className='sui-service-list'
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                             >
@@ -103,14 +100,13 @@ export default function Collection(props) {
                     </Droppable>
                 </DragDropContext>
                 <Spacer y={2} />
-                <div className='flex'>
+                <div className='sui-service-actions'>
                     <Button
                         fullWidth
                         onPress={onSelectOpen}
                     >
                         {t('config.service.add_builtin_service')}
                     </Button>
-                    <Spacer x={2} />
                     <Button
                         fullWidth
                         onPress={onSelectPluginOpen}

@@ -89,10 +89,10 @@ function HotkeyRow({ name, label, fallback }) {
     }
 
 
-    const apply = async () => {
+    const apply = async (shortcut = draft ?? saved) => {
         try {
-            await invoke('register_shortcut_by_frontend', { name, shortcut: draft ?? saved });
-            await setSaved(draft ?? saved, true);
+            await invoke('register_shortcut_by_frontend', { name, shortcut });
+            await setSaved(shortcut, true);
             setDraft(null);
             toast.success(t('config.hotkey.success'), { style: toastStyle });
         } catch (error) {
@@ -100,17 +100,21 @@ function HotkeyRow({ name, label, fallback }) {
         }
     };
     return saved !== null && (
-        <div className='config-item'>
+        <div className='config-item sui-hotkey-row'>
             <h3>{t(label)}</h3>
-            <Input
-                aria-label={t(label)}
-                variant='bordered'
-                value={draft ?? saved}
-                label={t('config.hotkey.set_hotkey')}
-                className='max-w-[50%]'
-                onKeyDown={(event) => keyDown(event, setDraft)}
-                endContent={<Button size='sm' onPress={apply}>{t('common.ok')}</Button>}
-            />
+            <div className='sui-hotkey-controls'>
+                <Input
+                    aria-label={t(label)}
+                    variant='bordered'
+                    value={draft ?? saved}
+                    label={t('config.hotkey.set_hotkey')}
+                    description={saved === '' && draft === null ? t('sui.shortcut_disabled') : null}
+                    className='sui-hotkey-input'
+                    onKeyDown={(event) => keyDown(event, setDraft)}
+                    endContent={<Button size='sm' onPress={() => apply()}>{t('common.ok')}</Button>}
+                />
+                <Button className='shrink-0' size='sm' variant='flat' onPress={() => apply(fallback)}>{t('sui.shortcut_reset')}</Button>
+            </div>
         </div>
     );
 }

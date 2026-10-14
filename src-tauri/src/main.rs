@@ -32,13 +32,10 @@ use tauri::Manager;
 use tauri_plugin_log::LogTarget;
 use tray::*;
 
-use window::config_window;
+use window::{config_window, TranslationRequestState};
 
 // Global AppHandle
 pub static APP: OnceCell<tauri::AppHandle> = OnceCell::new();
-
-// Text to be translated
-pub struct StringWrapper(pub Mutex<String>);
 
 fn main() {
     tauri::Builder::default()
@@ -73,7 +70,7 @@ fn main() {
             // Init Config
             info!("Init Config Store");
             init_config(app);
-            app.manage(StringWrapper(Mutex::new("".to_string())));
+            app.manage(TranslationRequestState(Mutex::new(Default::default())));
             config_window();
             // Update Tray Menu
             update_tray(app.app_handle(), "".to_string(), "".to_string());
@@ -131,6 +128,7 @@ fn main() {
             has_config_value,
             delete_config_value,
             get_text,
+            get_translation_request,
             cut_image,
             get_base64,
             copy_img,

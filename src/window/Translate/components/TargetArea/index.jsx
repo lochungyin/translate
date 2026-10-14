@@ -34,7 +34,7 @@ import useMeasure from 'react-use-measure';
 
 import * as builtinCollectionServices from '../../../../services/collection';
 import { sourceLanguageAtom, targetLanguageAtom } from '../LanguageArea';
-import { useConfig, useToastStyle, useVoice } from '../../../../hooks';
+import { useConfig, useToastStyle, useVoice, useTextareaAutoHeight } from '../../../../hooks';
 import { sourceTextAtom, detectLanguageAtom, translationRequestAtom } from '../SourceArea';
 import { invoke_plugin } from '../../../../utils/invoke_plugin';
 import * as builtinServices from '../../../../services/translate';
@@ -67,7 +67,7 @@ export default function TargetArea(props) {
     const [translateSecondLanguage] = useConfig('translate_second_language', 'en');
     const [historyDisable] = useConfig('history_disable', false);
     const [isLoading, setIsLoading] = useState(false);
-    const [hide, setHide] = useState(true);
+    const [hide, setHide] = useState(false);
 
     const [result, setResult] = useState('');
     const [error, setError] = useState('');
@@ -318,15 +318,7 @@ export default function TargetArea(props) {
         }
     };
 
-    // hide empty textarea
-    useEffect(() => {
-        if (textAreaRef.current) {
-            textAreaRef.current.style.height = '0px';
-            if (result !== '') {
-                textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
-            }
-        }
-    }, [result]);
+    useTextareaAutoHeight(textAreaRef, typeof result === 'string' ? result : '', appFontSize);
 
     // refresh tts config
     useEffect(() => {
@@ -385,17 +377,18 @@ export default function TargetArea(props) {
         >
 
             <CardHeader
-                className={`flex justify-between py-1 px-0 bg-content2 h-[30px] ${hide ? 'rounded-[10px]' : 'rounded-t-[10px]'}`}
+                as='header'
+                className={`flex justify-between py-1 px-0 bg-content2 ${hide ? 'rounded-[10px]' : 'rounded-t-[10px]'}`}
                 {...drag}
             >
                 {/* current service instance and available service instance to change */}
-                <div className='flex'>
+                <div className='sui-result-service flex'>
                     <Dropdown>
                         <DropdownTrigger>
                             <Button
                                 size='sm'
                                 variant='solid'
-                                className='bg-transparent'
+                                className='sui-result-select bg-transparent'
                                 startContent={
                                     whetherPluginService(currentTranslateServiceInstanceKey) ? (
                                         <img
@@ -418,9 +411,9 @@ export default function TargetArea(props) {
                                 }
                             >
                                 {whetherPluginService(currentTranslateServiceInstanceKey) ? (
-                                    <div className='my-auto'>{`${getInstanceName(currentTranslateServiceInstanceKey, () => pluginList['translate'][getServiceName(currentTranslateServiceInstanceKey)].display)} `}</div>
+                                    <div className='my-auto truncate'>{`${getInstanceName(currentTranslateServiceInstanceKey, () => pluginList['translate'][getServiceName(currentTranslateServiceInstanceKey)].display)} `}</div>
                                 ) : (
-                                    <div className='my-auto'>
+                                    <div className='my-auto truncate'>
                                         {getInstanceName(currentTranslateServiceInstanceKey, () =>
                                             t(
                                                 `services.translate.${getServiceName(currentTranslateServiceInstanceKey)}.title`
@@ -498,15 +491,16 @@ export default function TargetArea(props) {
                     </Button>
                 </div>
             </CardHeader>
-            {!isLoading && !result && !error && <p className='sui-result-empty'>{t('sui.empty')}</p>}
+            {!hide && !isLoading && !result && !error && <p className='sui-result-empty'>{t('sui.empty')}</p>}
             <animated.div style={{ ...springs }}>
                 <div ref={boundRef}>
                     {/* result content */}
-                    <CardBody className={`p-[12px] pb-0 ${hide && 'h-0 p-0'}`}>
+                    <CardBody className={`sui-result-body p-[12px] pb-0 ${(hide || (!result && !error)) && 'h-0 p-0'}`}>
                         {typeof result === 'string' ? (
                             <textarea
                                 ref={textAreaRef}
-                                className={`text-[${appFontSize}px] h-0 resize-none bg-transparent select-text outline-none`}
+                                className='w-full min-w-0 h-0 resize-none bg-transparent select-text outline-none'
+                                style={{ fontSize: appFontSize ? `${appFontSize}px` : undefined }}
                                 readOnly
                                 aria-label='译文'
                                 value={result}
@@ -637,7 +631,8 @@ export default function TargetArea(props) {
                         )}
                     </CardBody>
                     <CardFooter
-                        className={`bg-content1 rounded-none rounded-b-[10px] flex px-[12px] p-[5px] ${hide && 'hidden'}`}
+                        as='footer'
+                        className={`bg-content1 rounded-none rounded-b-[10px] flex px-[12px] p-[5px] ${(hide || (!result && !error)) && 'hidden'}`}
                     >
                         <ButtonGroup>
                             {/* speak button */}

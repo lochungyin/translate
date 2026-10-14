@@ -1,11 +1,11 @@
 # Windows x64 使用与构建
 
-适用：Intel / AMD 64 位 Windows 10 / 11。版本：0.1.0，包含 Google 当前网页 RPC 与应用代理修复。
+适用：Intel / AMD 64 位 Windows 10 / 11。版本：0.1.1，包含 Google 当前网页 RPC、应用代理、界面布局及快捷翻译浮窗修复。安装包可从 [GitHub Release](https://github.com/lochungyin/translate/releases/tag/v0.1.1) 下载。
 
 ## 使用现成包
 
-- 安装包：`src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/SuiTranslate_0.1.0_x64-setup.exe`。复制到 Windows 后运行，当前安装方式需要管理员权限；安装界面支持简体中文、繁体中文、英文。
-- 免安装包：`src-tauri/target/x86_64-pc-windows-msvc/release/bundle/portable/SuiTranslate_0.1.0_x64-portable.zip`。完整解压后运行 `SuiTranslate/SuiTranslate.exe`。
+- 安装包：`src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/SuiTranslate_0.1.1_x64-setup.exe`。复制到 Windows 后运行，当前安装方式需要管理员权限；安装界面支持简体中文、繁体中文、英文。
+- 免安装包：`src-tauri/target/x86_64-pc-windows-msvc/release/bundle/portable/SuiTranslate_0.1.1_x64-portable.zip`。完整解压后运行 `SuiTranslate/SuiTranslate.exe`。
 
 运行应用无需 Node.js 或 Rust。应用需要 Microsoft Edge WebView2 Runtime；安装包内置引导程序，缺少 Runtime 时需要联网下载。免安装版需要预先安装 Runtime，可从 [微软官方网站](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) 下载。
 
@@ -28,7 +28,7 @@ Google 默认无需 Key。应用代理关闭时直接连接；若 Windows 网络
 
 ## 重新构建
 
-Windows 本机构建沿用 `pnpm tauri build --bundles nsis`，需要 Node.js / pnpm、Rust MSVC 工具链、Microsoft C++ Build Tools 与 WebView2。
+Windows 本机构建沿用 `pnpm tauri build --target x86_64-pc-windows-msvc --bundles nsis -- --locked`，需要 Node.js / pnpm、Rust MSVC 工具链、Microsoft C++ Build Tools 与 WebView2。
 
 当前 Mac 的交叉编译工具已安装，Rust 使用原有隔离目录，Windows SDK 和 cargo-xwin 缓存在 `~/.cache/codex-runtimes/sui-windows/`。SDK 许可已由用户在本次会话明确接受。复用命令：
 

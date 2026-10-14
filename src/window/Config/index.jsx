@@ -47,7 +47,7 @@ export default function Config() {
                     <span>{isWorkspace ? t('sui.workspace') : t(`config.${location.pathname.slice(1)}.title`)}</span>
                     {osType !== 'Darwin' && <WindowControl />}
                 </header>
-                <div className={`sui-content ${isWorkspace ? 'sui-workspace-content' : ''}`}>{page}</div>
+                <div className={`sui-content ${isWorkspace ? 'sui-workspace-content' : ''} ${location.pathname === '/history' ? 'sui-history-content' : ''}`}>{page}</div>
             </main>
         </div>
     );
