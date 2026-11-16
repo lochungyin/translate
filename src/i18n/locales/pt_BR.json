@@ -308,9 +308,7 @@
                     "apikey": "Chave API"
                 },
                 "youdao": {
-                    "title": "Youdao",
-                    "appkey": "ID do App",
-                    "key": "Chave"
+                    "title": "Youdao"
                 },
                 "bing_dict": {
                     "title": "Bing Dicionário"

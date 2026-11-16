@@ -150,6 +150,8 @@ pub struct ServiceRequest {
     #[serde(default)]
     query: Vec<(String, String)>,
     form: Option<HashMap<String, String>>,
+    #[serde(default)]
+    multipart: bool,
     response_type: u8,
     timeout: u64,
 }
@@ -216,7 +218,16 @@ pub async fn service_http_request(
         .query(&request.query)
         .timeout(Duration::from_secs(request.timeout.clamp(1, 30)));
     if let Some(form) = request.form {
-        builder = builder.form(&form);
+        builder = if request.multipart {
+            let form = form
+                .into_iter()
+                .fold(reqwest::multipart::Form::new(), |form, (key, value)| {
+                    form.text(key, value)
+                });
+            builder.multipart(form)
+        } else {
+            builder.form(&form)
+        };
     }
     let response = builder.send().await.map_err(network_error)?;
     let status = response.status();

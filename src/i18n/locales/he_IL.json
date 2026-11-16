@@ -311,10 +311,6 @@
                     "secret": "סודי",
                     "appid": "מזהה אפליקציה"
                 },
-                "youdao": {
-                    "key": "מפתח",
-                    "appkey": "מזהה אפליקציה"
-                },
                 "yandex": {
                     "title": "Yandex"
                 },

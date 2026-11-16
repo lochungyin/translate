@@ -1,1 +1,1 @@
-zip pot.pbar pot.json pot.png pot.ps1
+zip SuiTranslate.pbar SuiTranslate.json pot.png pot.ps1

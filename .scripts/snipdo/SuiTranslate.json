@@ -1,10 +1,10 @@
 {
-    "name": "Pot Translation",
-    "identifier": "com.pot-app.snipdoext.desktop",
+    "name": "Sui Translate",
+    "identifier": "com.lochungyin.sui.translate.snipdo",
     "icon": "pot.png",
     "actions": [
         {
-            "title": "Pot Translation",
+            "title": "Sui Translate",
             "icon": "pot.png",
             "powershellFile": "pot.ps1"
         }

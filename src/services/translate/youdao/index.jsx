@@ -1,102 +1,52 @@
-import { fetch, Body } from '../../../utils/service_http';
-import CryptoJS from 'crypto-js';
-import { nanoid } from 'nanoid';
-import { truncate, assertYoudaoSuccess } from './response';
+import { fetch, Body, ResponseType } from '../../../utils/service_http';
+import { guestSessionQuery, translationForm } from './request';
+import { assertYoudaoHttp, parseGuestSession, parseYoudaoStream } from './response';
 
-export async function translate(text, from, to, options = {}) {
-    text = text.trim();
-    const config = options.config ?? {};
+const webApi = 'https://dict-trans.youdao.com';
+let guestToken;
+let pendingSession;
 
-    const appkey = config.appkey?.trim();
-    const key = config.key?.trim();
-    if (!text) return '';
-    if (!appkey?.trim() || !key?.trim()) throw new Error('请在服务设置中填写有道应用 ID 和应用密钥');
-
-    const url = 'https://openapi.youdao.com/api';
-    const curtime = String(Math.floor(new Date().getTime() / 1000));
-    const salt = nanoid();
-    const str1 = appkey + truncate(text) + salt + curtime + key;
-    const sign = CryptoJS.SHA256(str1).toString(CryptoJS.enc.Hex);
-
-    let res = await fetch(url, {
-        method: 'POST',
-        timeout: 20,
-        body: Body.form({
-            q: text,
-            from: from,
-            to: to,
-            appKey: appkey,
-            salt: salt,
-            sign: sign,
-            signType: 'v3',
-            curtime: curtime,
-        }),
-    });
-    if (res.ok) {
-        let result = res.data;
-        assertYoudaoSuccess(result);
-        if (result['isWord'] && result.basic?.explains) {
-            let target = { pronunciations: [], explanations: [], associations: [], sentence: [] };
-            let basic = result['basic'];
-
-            if (basic['uk-phonetic']) {
-                let speech = await fetch(basic['uk-speech'], { method: 'GET', responseType: 3, timeout: 8 }).catch(() => ({ ok: false }));
-                target['pronunciations'].push({
-                    region: 'UK',
-                    symbol: basic['uk-phonetic'],
-                    voice: speech.ok ? speech.data : '',
-                });
-            }
-            if (basic['us-phonetic']) {
-                let speech = await fetch(basic['us-speech'], { method: 'GET', responseType: 3, timeout: 8 }).catch(() => ({ ok: false }));
-                target['pronunciations'].push({
-                    region: 'US',
-                    symbol: basic['us-phonetic'],
-                    voice: speech.ok ? speech.data : '',
-                });
-            }
-            if (basic['phonetic'] && target['pronunciations'].length === 0) {
-                target['pronunciations'].push({
-                    region: '',
-                    symbol: basic['phonetic'],
-                    voice: '',
-                });
-            }
-            for (let i of basic['explains']) {
-                let trait = '';
-                if (i.split(' ')[0].endsWith('.')) {
-                    trait = i.split(' ')[0];
-                }
-                let explains = i.replace(trait, '').trim();
-                target['explanations'].push({ trait, explains: explains.split('；') });
-            }
-            if (basic['wfs']) {
-                for (let wf of basic['wfs']) {
-                    target['associations'].push(wf.wf.name + ' ' + wf.wf.value);
-                }
-            }
-            if (basic['exam_type']) {
-                target['associations'].push(
-                    basic['exam_type'].reduce((a, b) => {
-                        return a + ' ' + b;
-                    })
-                );
-            }
-            return target;
-        } else {
-            if (result['translation']) {
-                let target = '';
-                for (let i of result['translation']) {
-                    target += i + '\n';
-                }
-                return target.trim();
-            } else {
-                throw JSON.stringify(result);
-            }
-        }
-    } else {
-        throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(res.data)}`;
+async function request(path, options) {
+    let response;
+    try {
+        response = await fetch(webApi + path, { method: 'POST', ...options });
+    } catch (error) {
+        throw new Error(`有道网页翻译连接失败：${error instanceof Error ? error.message : error}`);
     }
+    assertYoudaoHttp(response);
+    return response.data;
+}
+
+async function getGuestSession() {
+    if (!pendingSession) {
+        // The website renews its anonymous session using the previous guest token.
+        pendingSession = request('/translate/key', { query: guestSessionQuery(guestToken) })
+            .then(parseGuestSession)
+            .then((session) => {
+                guestToken = session.token;
+                return session;
+            })
+            .finally(() => {
+                pendingSession = undefined;
+            });
+    }
+    return pendingSession;
+}
+
+export async function translate(text, from, to) {
+    text = text.trim();
+    if (!text) return '';
+    if (!from || !to) throw new Error('有道网页翻译暂不支持该语言方向，请选择其他语言或翻译服务');
+    if (text.length > 5000) throw new Error('有道网页翻译单次最多支持 5000 个字符，请缩短原文');
+
+    const session = await getGuestSession();
+    const body = await request('/webtranslate/sse', {
+        body: Body.form(translationForm(text, from, to, session)),
+        multipart: true,
+        timeout: 30,
+        responseType: ResponseType.Text,
+    });
+    return parseYoudaoStream(body);
 }
 
 export * from './Config';

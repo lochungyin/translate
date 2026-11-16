@@ -6,8 +6,6 @@
             "instance_name": "Nom de la configuration",
             "translate": {
                 "youdao": {
-                    "appkey": "ID d'application",
-                    "key": "Clé",
                     "title": "Youdao"
                 },
                 "deepl": {

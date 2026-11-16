@@ -93,12 +93,10 @@ export async function runNativeSmoke() {
         check(audio.duration > 0.5, 'No decodable audio');
         return { bytes: data.length, seconds: audio.duration, sampleRate: audio.sampleRate };
     });
-    await test('Youdao live translation', async () => {
-        const config = await store.get('youdao');
-        check(config?.appkey && config?.key, 'Requires Youdao app ID and secret');
-        const result = await youdaoTranslate('Hello, world.', 'auto', 'zh-CHS', { config });
-        check(result, 'Empty result');
-        return 'Received a live translation';
+    await test('Youdao guest translation without credentials', async () => {
+        const result = await youdaoTranslate('Hello, world!', 'en', 'zh-CHS', { config: {} });
+        check(typeof result === 'string' && result.includes('世界'), `Unexpected translation: ${result}`);
+        return result;
     }, true);
     await test('native SQLite clear then insert', async () => {
         const db = await Database.load('sqlite:native-smoke.db');

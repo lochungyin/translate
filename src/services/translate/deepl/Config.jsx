@@ -71,16 +71,10 @@ export function Config(props) {
                         }}
                     />
                 </div>
-                <div className={`config-item ${deeplConfig.type === 'free' && 'hidden'}`}>
+                <div className={`config-item ${deeplConfig.type !== 'deeplx' && 'hidden'}`}>
                     <h3 className='my-auto'>{t('services.help')}</h3>
                     <Button
-                        onPress={() => {
-                            const url =
-                                deeplConfig.type === 'api'
-                                    ? 'https://pot-app.com/docs/api/translate/deepl.html'
-                                    : 'https://github.com/OwO-Network/DeepLX';
-                            open(url);
-                        }}
+                        onPress={() => open('https://github.com/OwO-Network/DeepLX')}
                     >
                         {t('services.help')}
                     </Button>

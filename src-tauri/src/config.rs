@@ -15,7 +15,7 @@ pub fn init_config(app: &mut tauri::App) {
     info!("Load config from: {:?}", config_path);
     let mut store = StoreBuilder::new(app.handle(), config_path).build();
 
-    match store.load() {
+    match load_config(&mut store) {
         Ok(_) => info!("Config loaded"),
         Err(e) => {
             warn!("Config load error: {:?}", e);
@@ -25,6 +25,44 @@ pub fn init_config(app: &mut tauri::App) {
     app.manage(StoreWrapper(Mutex::new(store)));
     init_personal_defaults();
     let _ = check_service_available();
+}
+
+fn strip_legacy_youdao_credentials(key: &str, value: &mut Value) -> bool {
+    if key.split('@').next() != Some("youdao") {
+        return false;
+    }
+    let Some(config) = value.as_object_mut() else {
+        return false;
+    };
+    let app_id = config.remove("appkey");
+    let secret = config.remove("key");
+    app_id.is_some() || secret.is_some()
+}
+
+fn load_config(store: &mut Store<Wry>) -> Result<(), tauri_plugin_store::Error> {
+    store.load()?;
+    let cleaned: Vec<_> = store
+        .entries()
+        .filter(|(key, _)| key.split('@').next() == Some("youdao"))
+        .filter_map(|(key, value)| {
+            let mut value = value.clone();
+            strip_legacy_youdao_credentials(key, &mut value).then(|| (key.clone(), value))
+        })
+        .collect();
+    if !cleaned.is_empty() {
+        for (key, value) in cleaned {
+            store.insert(key, value)?;
+        }
+        store.save()?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn reload_store() -> Result<(), String> {
+    let state = APP.get().unwrap().state::<StoreWrapper>();
+    let mut store = state.0.lock().map_err(|e| e.to_string())?;
+    load_config(&mut store).map_err(|e| e.to_string())
 }
 
 fn check_available(list: Vec<String>, builtin: Vec<&str>, plugin: Vec<String>, key: &str) {
@@ -156,7 +194,7 @@ fn init_personal_defaults() {
         "recognize_service_list": ["system", "tesseract"],
         "tts_service_list": ["google_tts"],
         "google": {"custom_url": "https://translate.google.com"},
-        "youdao": {"appkey": "", "key": ""},
+        "youdao": {},
         "translate_detect_engine": "local",
         "translate_window_width": 440,
         "translate_window_height": 600,
@@ -185,9 +223,10 @@ pub fn has_config_value(key: String) -> bool {
 }
 
 #[tauri::command]
-pub fn set_config_value(key: String, value: Value) -> Result<(), String> {
+pub fn set_config_value(key: String, mut value: Value) -> Result<(), String> {
     let state = APP.get().unwrap().state::<StoreWrapper>();
     let mut store = state.0.lock().map_err(|e| e.to_string())?;
+    strip_legacy_youdao_credentials(&key, &mut value);
     store.insert(key, value).map_err(|e| e.to_string())?;
     store.save().map_err(|e| e.to_string())
 }
@@ -199,4 +238,30 @@ pub fn delete_config_value(key: String) -> Result<bool, String> {
     let deleted = store.delete(key).map_err(|e| e.to_string())?;
     store.save().map_err(|e| e.to_string())?;
     Ok(deleted)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn removes_cloud_credentials_only_from_builtin_youdao_instances() {
+        let old = json!({
+            "appkey": "retired-app-id",
+            "key": "retired-secret",
+            "instanceName": "My Youdao",
+            "enable": false
+        });
+        for instance in ["youdao", "youdao@custom"] {
+            let mut value = old.clone();
+            assert!(strip_legacy_youdao_credentials(instance, &mut value));
+            assert_eq!(value, json!({"instanceName": "My Youdao", "enable": false}));
+            assert!(!strip_legacy_youdao_credentials(instance, &mut value));
+        }
+        for other in ["google", "plugin_youdao@example", "youdao_other"] {
+            let mut value = old.clone();
+            assert!(!strip_legacy_youdao_credentials(other, &mut value));
+            assert_eq!(value, old);
+        }
+    }
 }

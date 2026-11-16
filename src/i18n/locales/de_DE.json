@@ -325,9 +325,7 @@
                     "apikey": "API-Schlüssel"
                 },
                 "youdao": {
-                    "title": "Youdao Übersetzung",
-                    "appkey": "App ID",
-                    "key": "Key"
+                    "title": "Youdao Übersetzung"
                 },
                 "bing_dict": {
                     "title": "Bing Wörterbuch"

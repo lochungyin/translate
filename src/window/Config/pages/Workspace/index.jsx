@@ -12,7 +12,6 @@ export default function Workspace() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [clipboard, setClipboard] = useConfig('clipboard_monitor', false);
-    const [youdao] = useConfig('youdao', {});
     const [selectionHotkey] = useConfig('hotkey_selection_translate', 'Alt+D');
     const [screenshotHotkey] = useConfig('hotkey_ocr_translate', 'Alt+S');
     const toastStyle = useToastStyle();
@@ -88,26 +87,6 @@ export default function Workspace() {
                 </Button>
             </div>
             <Translate embedded />
-            {youdao && (!youdao.appkey || !youdao.key) && (
-                <div className='sui-setup-note'>
-                    <img
-                        src='/logo/youdao.svg'
-                        alt=''
-                    />
-                    <div>
-                        <strong>{t('sui.youdao_setup')}</strong>
-                        <p>{t('sui.youdao_hint')}</p>
-                    </div>
-                    <Button
-                        size='sm'
-                        color='primary'
-                        variant='flat'
-                        onPress={() => navigate('/service')}
-                    >
-                        {t('sui.configure')}
-                    </Button>
-                </div>
-            )}
             <footer className='sui-shortcut-note'>
                 <span>
                     {t('sui.selection')} <kbd>{selectionHotkey || '未设置'}</kbd>

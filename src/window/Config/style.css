@@ -316,38 +316,6 @@
     color: var(--sui-muted);
     font-size: 12px;
 }
-.sui-setup-note {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px;
-    background: var(--sui-sidebar);
-    border: 1px solid var(--sui-border);
-    border-radius: 10px;
-    margin-top: 18px;
-}
-.sui-setup-note img {
-    width: 23px;
-    height: 23px;
-    flex-shrink: 0;
-}
-.sui-setup-note > div {
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-.sui-setup-note strong {
-    font-size: 12px;
-    font-weight: 600;
-}
-.sui-setup-note p {
-    font-size: 11px;
-    color: var(--sui-muted);
-    margin-top: 3px;
-}
-.sui-setup-note button {
-    margin-left: auto;
-    flex-shrink: 0;
-}
 .sui-shortcut-note {
     display: flex;
     gap: 20px;
@@ -391,7 +359,7 @@
     gap: 8px;
     margin: 28px 0;
 }
-.sui-about-attribution {
+.sui-about-license {
     padding-top: 24px;
     border-top: 1px solid var(--sui-border);
 }
@@ -455,14 +423,7 @@
     .sui-actions .sui-service-link {
         margin-left: 0;
     }
-    .sui-setup-note {
-        flex-wrap: wrap;
-    }
     .sui-titlebar {
         padding-left: 12px;
     }
-}
-
-.sui-setup-note button {
-    color: var(--sui-accent);
 }

@@ -33,16 +33,8 @@ export default function About() {
                     {t('sui.config')}
                 </Button>
             </div>
-            <div className='sui-about-attribution'>
-                <p>{t('sui.attribution')}</p>
-                <Button
-                    size='sm'
-                    color='primary'
-                    variant='flat'
-                    onPress={() => open('https://github.com/pot-app/pot-desktop')}
-                >
-                    {t('sui.upstream')}
-                </Button>
+            <div className='sui-about-license'>
+                <p>{t('sui.license')}</p>
             </div>
         </div>
     );

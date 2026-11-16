@@ -397,9 +397,7 @@
                     "apikey": "API Key"
                 },
                 "youdao": {
-                    "title": "Youdao",
-                    "appkey": "App ID",
-                    "key": "Ключ"
+                    "title": "Youdao"
                 },
                 "bing_dict": {
                     "title": "Словник Bing"

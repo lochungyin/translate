@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button, Input, Select, SelectItem } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
-import { open } from '@tauri-apps/api/shell';
 import { useConfig } from '../../hooks';
 import { translationText } from '../../utils/translation_result';
 import { INSTANCE_NAME_CONFIG_KEY } from '../../utils/service_instance';
@@ -12,8 +11,9 @@ export default function ProviderConfig({
     updateServiceList,
     onClose,
     translate,
-    defaults,
-    fields,
+    defaults = {},
+    fields = [],
+    testTarget = 'zh-CN',
 }) {
     const { t } = useTranslation();
     const [config, setConfig] = useConfig(
@@ -32,7 +32,7 @@ export default function ProviderConfig({
         setTesting(true);
         setMessage('');
         try {
-            const result = await translate('Hello, world.', 'auto', service === 'youdao' ? 'zh-CHS' : 'zh-CN', { config });
+            const result = await translate('Hello, world.', 'auto', testTarget, { config });
             const text = translationText(result);
             if (!text.trim()) throw new Error('服务返回了空结果，请检查配置');
             setFailed(false);
@@ -59,7 +59,7 @@ export default function ProviderConfig({
             }}
         >
             <p className='text-sm text-default-500 mb-5'>
-                {t(service === 'google' ? 'sui.google_hint' : 'sui.youdao_api_hint')}
+                {t(`sui.${service}_hint`)}
             </p>
             <Input
                 className='mb-4'
@@ -99,17 +99,6 @@ export default function ProviderConfig({
                     }}
                 />
             ))}
-            {service === 'youdao' && (
-                <Button
-                    className='mb-4'
-                    size='sm'
-                    variant='light'
-                    color='primary'
-                    onPress={() => open('https://ai.youdao.com/DOCSIRMA/html/trans/api/wbfy/index.html')}
-                >
-                    {t('sui.youdao_api')}
-                </Button>
-            )}
             <p className='text-xs text-default-500 mb-4'>{t('sui.save_hint')}</p>
             {message && (
                 <p

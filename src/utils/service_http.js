@@ -10,6 +10,7 @@ export async function fetch(url, options = {}) {
             method: options.method ?? 'GET',
             query: Object.entries(options.query ?? {}).map(([key, value]) => [key, String(value)]),
             form: options.body?.payload ?? null,
+            multipart: options.multipart ?? false,
             responseType: options.responseType ?? 1,
             timeout: options.timeout ?? 20,
         },

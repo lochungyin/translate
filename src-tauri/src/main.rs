@@ -82,7 +82,6 @@ fn main() {
                 Err(e) => Notification::new(app.config().tauri.bundle.identifier.clone())
                     .title("Failed to register global shortcut")
                     .body(&e)
-                    .icon("pot")
                     .show()
                     .unwrap(),
             }

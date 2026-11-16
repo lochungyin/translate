@@ -1,9 +1,9 @@
-curl -Lsd "$POPCLIP_TEXT" "127.0.0.1:60828"
+url="http://127.0.0.1:60829/translate"
 
-if [ $? -eq 0 ]; then
+if curl -s --data-raw "$POPCLIP_TEXT" "$url"; then
     exit 0
-else
-    open -g -a pot
-    sleep 2
-    curl -Lsd "$POPCLIP_TEXT" "127.0.0.1:60828/translate"
 fi
+
+open -g -b com.lochungyin.sui.translate || exit 1
+sleep 2
+curl -s --data-raw "$POPCLIP_TEXT" "$url"

@@ -319,9 +319,7 @@
                     "apikey": "API Key"
                 },
                 "youdao": {
-                    "title": "有道翻譯",
-                    "appkey": "應用程式 ID",
-                    "key": "Key"
+                    "title": "有道翻譯"
                 },
                 "bing_dict": {
                     "title": "必應詞典"

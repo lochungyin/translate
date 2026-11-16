@@ -1,11 +1,9 @@
-use crate::config::StoreWrapper;
 use crate::error::Error;
 use crate::window::{TranslationRequest, TranslationRequestState};
 use crate::APP;
 use log::{error, info};
 use serde_json::{json, Value};
 use std::io::Read;
-use tauri::Manager;
 
 #[tauri::command]
 pub fn get_text(state: tauri::State<TranslationRequestState>) -> String {
@@ -15,13 +13,6 @@ pub fn get_text(state: tauri::State<TranslationRequestState>) -> String {
 #[tauri::command]
 pub fn get_translation_request(state: tauri::State<TranslationRequestState>) -> TranslationRequest {
     state.0.lock().unwrap().clone()
-}
-
-#[tauri::command]
-pub fn reload_store() {
-    let state = APP.get().unwrap().state::<StoreWrapper>();
-    let mut store = state.0.lock().unwrap();
-    store.load().unwrap();
 }
 
 #[tauri::command]
